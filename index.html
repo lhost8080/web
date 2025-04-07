@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Web Sender</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.4.1/cosmo/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="https://mcusercontent.com/c217b4df7e0ebdb3de8f14353/images/97a20211-7a4c-90b8-a47f-fce53bbc7ca2.png">
+    <style>
+        .container { margin-top: 20px; }
+        .result-box { margin-top: 15px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+        .well { font-size: 14px; }
+        .smtp-section { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .smtp-section h5 { margin-top: 0; }
+        #updateMessage { 
+            display: none; 
+            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
+            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
+            border-radius: 8px; /* Slightly larger radius for a softer look */
+            padding: 15px; /* More padding for breathing room */
+            margin: 15px 0; /* Vertical spacing */
+            color: #856404; /* Darker yellow-brown text for contrast */
+            font-weight: bold; 
+            font-size: 16px; /* Slightly larger text */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            max-width: 100%; 
+            word-wrap: break-word; 
+            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #resultArea { margin-top: 20px; }
+        #sendResultArea { 
+            margin-top: 20px; 
+            overflow: hidden; /* Disable all scrollbars */
+        }
+        .result-container { 
+            max-width: 100%; 
+            overflow-x: auto; /* Default for other result areas */
+        }
+        #sendResultArea .result-container { 
+            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
+            word-wrap: break-word; /* Ensure text wraps */
+        }
+        #sendResultArea .result-item { 
+            margin-bottom: 5px; /* Spacing between items */
+        }
+        .result-container table { width: 100%; max-width: 100%; }
+        .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+        .result-container table th:first-child { width: 70%; }
+        .result-container table th:last-child { width: 30%; }
+    </style>
+</head>
+<body>
+    <div class="container col-lg-6">
+        <h3><span class="" style="color: green;"></span> Human Web Sender <small></small></h3><br>
+        <form id="mailForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" id="action" value="score">
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label for="senderEmail">Email <small>(pipe-separated, optional if using link)</small></label>
+                    <input type="text" class="form-control input-sm" id="senderEmail" name="senderEmail" value="" placeholder="e.g., user1@example.com|user2@example.com">
+                </div>
+                <div class="form-group col-lg-6">
+                    <label for="senderName">Sender Name <small>(pipe-separated)</small></label>
+                    <input type="text" class="form-control input-sm" id="senderName" name="senderName" value="" placeholder="e.g., John Doe|Jane Doe">
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label for="attachment">Attachment <small>(Multiple Available)</small></label>
+                    <input type="file" name="attachment[]" id="attachment" multiple>
+                </div>
+                <div class="form-group col-lg-6">
+                    <label for="messageLetterUpload">Message Letter Upload <small>(HTML/TXT, Multiple Available)</small></label>
+                    <input type="file" name="messageLetterUpload[]" id="messageLetterUpload" multiple accept=".html,.txt">
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-lg-12">
+                    <label for="subject">Subject <small>(pipe-separated)</small></label>
+                    <input type="text" class="form-control input-sm" id="subject" name="subject" value="" placeholder="e.g., Subject1|Subject2|Subject3">
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label for="messageLetter">Message Letter <button type="button" class="btn btn-default btn-xs" onclick="previewMessage()">Preview</button></label>
+                    <textarea name="messageLetter" id="messageLetter" class="form-control" rows="10"></textarea>
+                </div>
+                <div class="form-group col-lg-6">
+                    <label for="emailList">Email List <button type="button" class="btn btn-default btn-xs" onclick="showFilterExtract()">Filter/Extract</button></label>
+                    <textarea name="emailList" id="emailList" class="form-control" rows="10"></textarea>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-lg-6">
+                    <label for="messageType">Message Type</label>
+                    HTML <input type="radio" name="messageType" value="1" checked> 
+                    Plain <input type="radio" name="messageType" value="2">
+                </div>
+                <div class="form-group col-lg-3">
+                    <label for="charset">Character set</label>
+                    <select class="form-control input-sm" id="charset" name="charset">
+                        <option selected>UTF-8</option>
+                        <option>ISO-8859-1</option>
+                    </select>
+                </div>
+                <div class="form-group col-lg-3">
+                    <label for="encode">Message encoding</label>
+                    <select class="form-control input-sm" id="encode" name="encode">
+                        <option selected>8bit</option>
+                        <option>7bit</option>
+                        <option>binary</option>
+                        <option>base64</option>
+                        <option>quoted-printable</option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn btn-default btn-sm" onclick="sendEmails()">SEND</button> or 
+            <a href="#" onclick="checkSpamScore(); return false;">check SpamAssassin Score</a><br></br>
+        </form>
+        <div id="sendResultArea"></div>
+    </div>
+
+    <div class="col-lg-6"><br>
+        <label for="well">Instruction</label>
+        <div id="well" class="well">
+            <h4>Server Information</h4>
+            <ul>
+                <li>Server IP Address: <b id="serverIp">Loading...</b> <a href="#" onclick="checkBlacklist(getServerIp())" class="label label-primary">Check Blacklist <i class="glyphicon glyphicon-search"></i></a></li>
+                <li>Version: <b id="currentVersion">2.1 (Web Version)</b></li>
+                <li>SMTP Settings: <a href="#" onclick="showSettings(); return false;" class="label label-primary">Settings <i class="glyphicon glyphicon-cog"></i></a></li>
+            </ul>
+            <h4>HELP</h4>
+            <ul>
+                <li>[-email-] : <b>Receiver Email</b> (emailuser@emaildomain.com)</li>
+                <ul>
+                    <li>[-emailuser-] : <b>Email User</b> (emailuser)</li>
+                    <li>[-emaildomain-] : <b>Email Domain</b> (emaildomain.com)</li>
+                </ul>
+                <li>[-time-] : <b>Date and Time</b> (<span id="currentTime"></span>)</li>
+                <li>[-randomstring-] : <b>Random string (0-9,a-z)</b></li>
+                <li>[-randomnumber-] : <b>Random number (0-9)</b></li>
+                <li>[-randomletters-] : <b>Random Letters (a-z)</b></li>
+                <li>[-randommd5-] : <b>Random MD5</b></li>
+                <li>[-unsubscribeLink-] : <b>Unsubscribe Link</b> (from settings)</li>
+                <br>
+                <li><b>Note:</b> When "Use Link" is enabled, sender email is optional; defaults to the link's sender if not provided.</li>
+            </ul>
+            <h4>Example</h4>
+            Receiver Email = <b>user@domain.com</b><br>
+            <ul>
+                <li>hello <b>[-emailuser-]</b> = hello <b>user</b></li>
+                <li>your domain is <b>[-emaildomain-]</b> = Your Domain is <b>domain.com</b></li>
+                <li>your code is <b>[-randommd5-]</b> = your code is <b>(random MD5)</b></li>
+                <li>Unsubscribe: <b>[-unsubscribeLink-]</b> = Unsubscribe: <b>(link from settings)</b></li>
+            </ul>
+            <h6>by <b><a href="https://t.me/sayhellooobot">Crazie Coder</a></b></h6>
+        </div>
+        <div id="updateMessage"></div>
+    </div>
+
+    <div class="col-lg-6 col-lg-offset-0" id="resultArea"></div>
+
+    <!-- Filter/Extract Modal -->
+    <div class="modal fade" id="filterExtractModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Email Filter/Extract</h4>
+                </div>
+                <div class="modal-body">
+                    <label for="filterEmailList">Text</label>
+                    <input type="file" id="filterFile" onchange="loadFilterFile()">
+                    or
+                    <textarea id="filterEmailList" class="form-control" rows="7"></textarea>
+                    <legend><h5>Extract Email</h5></legend>
+                    <p>Detecting every email (100%) and order them line by line</p>
+                    <button class="btn btn-default btn-sm" onclick="extractEmails()">Start</button>
+                    <legend><h5>Filter Emails</h5></legend>
+                    <p>Validate emails using Human API</p>
+                    <button class="btn btn-default btn-sm" onclick="validateEmails()">Start</button>
+                    <legend><h5>Validate Emails</h5></legend>
+                    <label>Keywords <small>ex: gmail.com or .co.uk</small></label>
+                    <textarea id="keywords" class="form-control" rows="4">gmail.com
+hotmail.com
+yahoo.com
+.co.uk</textarea><br>
+                    <button class="btn btn-default btn-sm" onclick="filterEmails()">Start</button><br>
+                    <label class="result-box">Result</label>
+                    <textarea id="filterResult" class="form-control" rows="5" readonly></textarea>
+                    <button class="btn btn-default btn-sm" onclick="downloadFilterResult()">Download</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Settings</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="smtpSections">
+                        <!-- SMTP sections will be dynamically added here -->
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="addSmtpSection()">Add SMTP</button>
+                    <hr>
+                    <div class="form-group">
+                        <label for="replyToName">Reply-To Name</label>
+                        <input type="text" class="form-control" id="replyToName" placeholder="e.g., John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="replyToEmail">Reply-To Email</label>
+                        <input type="email" class="form-control" id="replyToEmail" placeholder="e.g., reply@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="unsubscribeLink">Unsubscribe Link</label>
+                        <input type="url" class="form-control" id="unsubscribeLink" placeholder="e.g., https://example.com/unsubscribe">
+                    </div>
+                    <div class="form-group">
+                        <label for="unsubscribeEmail">Unsubscribe Email</label>
+                        <input type="email" class="form-control" id="unsubscribeEmail" placeholder="e.g., unsubscribe@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="unsubscribeScript">Unsubscribe Script <small>(HTML to append to message)</small></label>
+                        <textarea class="form-control" id="unsubscribeScript" rows="3" placeholder="e.g., <p>Click <a href='[-unsubscribeLink-]'>here</a> to unsubscribe.</p>"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailSenderUrl">Email Sender URL <small>(required if Use Link is Yes)</small></label>
+                        <input type="url" class="form-control" id="emailSenderUrl" placeholder="e.g., https://example.com/send" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="proxyType">Proxy Type</label>
+                        <select class="form-control" id="proxyType">
+                            <option value="socks5">SOCKS5</option>
+                            <option value="http">HTTP</option>
+                            <option value="https">HTTPS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="proxy">Proxy <small>(e.g., proxy:port@username:password or proxy:port)</small></label>
+                        <input type="text" class="form-control" id="proxy" placeholder="e.g., proxy.example.com:1080@user:pass">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtpEmailLimit">SMTP Email Limit</label>
+                        <input type="number" class="form-control" id="smtpEmailLimit" placeholder="e.g., 50">
+                    </div>
+                    <div class="form-group">
+                        <label for="sendInterval">Send Interval (ms)</label>
+                        <input type="number" class="form-control" id="sendInterval" placeholder="e.g., 100">
+                    </div>
+                    <div class="form-group">
+                        <label for="sleepTime">Sleep Time (seconds)</label>
+                        <input type="number" class="form-control" id="sleepTime" placeholder="e.g., 10">
+                    </div>
+                    <div class="form-group">
+                        <label for="useLink">Use Link</label>
+                        <select class="form-control" id="useLink">
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="useMultiThreading">Use Multi-Threading</label>
+                        <select class="form-control" id="useMultiThreading">
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxThreads">Max Threads</label>
+                        <input type="number" class="form-control" id="maxThreads" placeholder="e.g., 5">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxRetries">Max Retries</label>
+                        <input type="number" class="form-control" id="maxRetries" placeholder="e.g., 3" min="0" step="1">
+                    </div>
+                    <div id="saveButtonContainer" style="display: none;">
+                        <button class="btn btn-success btn-sm" onclick="saveSettings()">Save</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script>
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function randString(chars) {
+            const length = Math.floor(Math.random() * (25 - 12 + 1)) + 12;
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function md5(string) {
+            return btoa(string).slice(0, 32);
+        }
+
+        function leafClear(text, email) {
+            const [emailuser, emaildomain] = email.split('@');
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            return text
+                .replace("[-time-]", new Date().toLocaleString())
+                .replace("[-email-]", email)
+                .replace("[-emailuser-]", emailuser)
+                .replace("[-emaildomain-]", emaildomain)
+                .replace("[-randomletters-]", randString('abcdefghijklmnopqrstuvwxyz'))
+                .replace("[-randomstring-]", randString('abcdefghijklmnopqrstuvwxyz0123456789'))
+                .replace("[-randomnumber-]", randString('0123456789'))
+                .replace("[-randommd5-]", md5(randString('abcdefghijklmnopqrstuvwxyz0123456789')))
+                .replace("[-unsubscribeLink-]", settings.unsubscribeLink || '');
+        }
+
+        document.getElementById('currentTime').textContent = new Date().toLocaleString();
+
+        let serverIp = "Unknown";
+        async function fetchServerIp() {
+            try {
+                const response = await fetch('http://localhost:8000/server-ip');
+                if (!response.ok) throw new Error('Failed to fetch server IP');
+                const data = await response.json();
+                serverIp = data.ip;
+                document.getElementById('serverIp').textContent = serverIp;
+            } catch (error) {
+                console.error('Error fetching server IP:', error);
+                document.getElementById('serverIp').textContent = 'Unknown';
+            }
+        }
+        fetchServerIp();
+
+        function getServerIp() {
+            return serverIp;
+        }
+
+        async function checkImportantUpdates() {
+            try {
+                const response = await fetch('http://localhost:8000/check-message');
+                if (!response.ok) throw new Error('Failed to fetch message');
+                const data = await response.json();
+                const messageElement = document.getElementById('updateMessage');
+                if (data.message && data.message.trim()) {
+                    messageElement.textContent = `Important Updates: ${data.message}`;
+                    messageElement.style.display = 'block';
+                } else {
+                    messageElement.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error checking important updates:', error);
+                document.getElementById('updateMessage').style.display = 'none';
+            }
+        }
+
+        async function checkSoftwareUpdates() {
+            try {
+                const response = await fetch('http://localhost:8000/check-update');
+                if (!response.ok) throw new Error('Failed to check updates');
+                const data = await response.json();
+                const currentVersion = document.getElementById('currentVersion').textContent.split(' ')[0].trim();
+                
+                if (data.update_available && currentVersion !== data.latest_version) {
+                    const confirmUpdate = confirm(`A new version (${data.latest_version}) is available. Current version: ${currentVersion}. Do you want to download it?`);
+                    if (confirmUpdate && data.download_url) {
+                        window.open(data.download_url, '_blank');
+                    }
+                } else {
+                    console.log(`No update needed. Current: ${currentVersion}, Latest: ${data.latest_version}`);
+                }
+            } catch (error) {
+                console.error('Error checking software updates:', error);
+            }
+        }
+
+        function startPeriodicChecks() {
+            checkImportantUpdates();
+            checkSoftwareUpdates();
+            setInterval(checkImportantUpdates, 30000);
+            setInterval(checkSoftwareUpdates, 3600000);
+        }
+
+        window.onload = startPeriodicChecks;
+
+        function previewMessage() {
+            const message = document.getElementById('messageLetter').value;
+            const messageType = document.querySelector('input[name="messageType"]:checked').value;
+            const preview = leafClear(message, "user@domain.com");
+            const win = window.open('', '_blank');
+            win.document.write(messageType === "1" ? preview : `<pre>${preview}</pre>`);
+        }
+
+        function showFilterExtract() {
+            $('#filterExtractModal').modal('show');
+        }
+
+        function loadFilterFile() {
+            const fileInput = document.getElementById('filterFile');
+            const filterEmailList = document.getElementById('filterEmailList');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    filterEmailList.value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function extractEmails() {
+            const emailList = document.getElementById('filterEmailList').value.toLowerCase();
+            const emailRegex = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}/g;
+            const matches = emailList.match(emailRegex) || [];
+            const uniqueEmails = [...new Set(matches.filter(isValidEmail))];
+            document.getElementById('filterResult').value = uniqueEmails.join('\n');
+        }
+
+        async function validateEmails() {
+            const fileInput = document.getElementById('filterFile');
+            const filterResult = document.getElementById('filterResult');
+            filterResult.value = "Validating emails, please wait...";
+
+            if (!fileInput.files.length) {
+                filterResult.value = "Error: Please upload a text file containing emails.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('emailFile', fileInput.files[0]);
+
+            try {
+                const response = await fetch('http://localhost:8000/validate-emails', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                filterResult.value = result.resultText;
+            } catch (error) {
+                console.error('Validation error:', error);
+                filterResult.value = `Error: Failed to validate emails. ${error.message}`;
+            }
+        }
+
+        function filterEmails() {
+            const emailList = document.getElementById('filterEmailList').value.toLowerCase().split('\n');
+            const keywords = document.getElementById('keywords').value.toLowerCase().split('\n').filter(k => k.trim());
+            const filtered = emailList.filter(email => 
+                isValidEmail(email) && keywords.some(keyword => email.includes(keyword.trim()))
+            );
+            document.getElementById('filterResult').value = filtered.join('\n');
+        }
+
+        function downloadFilterResult() {
+            const result = document.getElementById('filterResult').value;
+            const blob = new Blob([result], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `emails_${Date.now()}.txt`;
+            link.click();
+        }
+
+        async function checkBlacklist(ip) {
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Checking blacklist status, please wait...</div>';
+            try {
+                const response = await fetch(`http://localhost:8000/check-blacklist/${ip}`);
+                if (!response.ok) throw new Error('Failed to fetch blacklist status');
+                const data = await response.json();
+                const blacklistStatus = data.blacklist_status;
+                let resultHtml = `<div class="result-container"><h4>Blacklist Check for ${data.ip}</h4><table class="table"><tr><th>Blacklist</th><th>Status</th></tr>`;
+                for (const [dnsbl, status] of Object.entries(blacklistStatus)) {
+                    const color = status === "Listed" ? "red" : status === "Clean" ? "green" : "orange";
+                    resultHtml += `<tr><td>${dnsbl}</td><td><span style="color: ${color}">${status}</span></td></tr>`;
+                }
+                resultHtml += '</table></div>';
+                document.getElementById('resultArea').innerHTML = resultHtml;
+                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+            } catch (error) {
+                console.error('Blacklist check error:', error);
+                document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status. Please try again later.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+            }
+        }
+
+        let uploadedMessages = [];
+        document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
+            uploadedMessages = [];
+            const files = e.target.files;
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    uploadedMessages.push(event.target.result);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function getRandomMessage(mainMessage) {
+            if (uploadedMessages.length > 0 && Math.random() > 0.5) {
+                return uploadedMessages[Math.floor(Math.random() * uploadedMessages.length)];
+            }
+            return mainMessage;
+        }
+
+        async function sendEmails() {
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Sending emails, please wait...</div>';
+
+            const formData = new FormData();
+            const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
+            const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
+            const senderNames = document.getElementById('senderName').value.split('|').filter(n => n.trim());
+            const subjects = document.getElementById('subject').value.split('|').filter(s => s.trim());
+            const mainMessageLetter = document.getElementById('messageLetter').value;
+            const messageType = document.querySelector('input[name="messageType"]:checked').value;
+            const charset = document.getElementById('charset').value;
+            const encoding = document.getElementById('encode').value;
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+
+            if (subjects.length === 0) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
+                return;
+            }
+            if (senderNames.length === 0) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty. Please provide at least one sender name.</span></div>';
+                return;
+            }
+            if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Email Sender URL is required when Use Link is enabled.</span></div>';
+                return;
+            }
+            if (settings.useLink !== 'yes' && senderEmails.length === 0) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Email is required when Use Link is disabled.</span></div>';
+                return;
+            }
+
+            formData.append('emailList', JSON.stringify(emailList));
+            formData.append('senderEmails', JSON.stringify(senderEmails));
+            formData.append('senderNames', JSON.stringify(senderNames));
+            formData.append('subjects', JSON.stringify(subjects));
+            formData.append('mainMessageLetter', mainMessageLetter);
+            formData.append('messageType', messageType);
+            formData.append('charset', charset);
+            formData.append('encoding', encoding);
+            formData.append('smtpSettings', JSON.stringify(settings.smtps || []));
+            formData.append('uploadedMessages', JSON.stringify(uploadedMessages));
+            formData.append('settings', JSON.stringify(settings));
+
+            const attachments = document.getElementById('attachment').files;
+            for (let i = 0; i < attachments.length; i++) {
+                formData.append('attachments', attachments[i]);
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/send-emails', {
+                    method: 'POST',
+                    body: formData,
+                    signal: AbortSignal.timeout(30000)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    const errorMessage = errorData.resultHtml || 'Unknown error occurred';
+                    throw new Error(errorMessage);
+                }
+
+                const result = await response.json();
+                document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${result.resultHtml}</div>`;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                let resultHtml = '<div class="result-container">';
+                if (error.message.includes('Sender email does not match SMTP Configuration')) {
+                    resultHtml += '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
+                } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
+                    resultHtml += '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
+                } else if (error.message.includes('No message provided')) {
+                    resultHtml += '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
+                } else {
+                    emailList.forEach((email, index) => {
+                        if (!isValidEmail(email)) {
+                            resultHtml += `<div class="result-item">[${index + 1}/${emailList.length}] ${email} <span class="label label-default">Incorrect Email</span></div>`;
+                        } else {
+                            resultHtml += `<div class="result-item">[${index + 1}/${emailList.length}] ${email} <span class="label label-default">Failed</span></div>`;
+                        }
+                    });
+                }
+                resultHtml += '</div>';
+                document.getElementById('sendResultArea').innerHTML = resultHtml;
+            }
+        }
+
+        async function checkSpamScore() {
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Checking spam score, please wait...</div>';
+
+            const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
+            const senderNames = document.getElementById('senderName').value.split('|').filter(n => n.trim());
+            const subjects = document.getElementById('subject').value.split('|').filter(s => s.trim());
+            const mainMessageLetter = document.getElementById('messageLetter').value;
+            const messageType = document.querySelector('input[name="messageType"]:checked').value;
+
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            const smtps = settings.smtps || [];
+            if (!mainMessageLetter && uploadedMessages.length === 0) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: No message provided for spam check.</span></div>';
+                return;
+            }
+            if (subjects.length === 0) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
+                return;
+            }
+            if (senderNames.length === 0) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty. Please provide at least one sender name.</span></div>';
+                return;
+            }
+            if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Email Sender URL is required when Use Link is enabled.</span></div>';
+                return;
+            }
+            if (settings.useLink !== 'yes' && senderEmails.length !== smtps.length) {
+                document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error: Number of sender emails (${senderEmails.length}) must match number of SMTP configurations (${smtps.length}).</span></div>`;
+                return;
+            }
+            if (settings.useLink !== 'yes') {
+                for (let i = 0; i < senderEmails.length; i++) {
+                    if (senderEmails[i] !== smtps[i].email) {
+                        document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Sender email does not match SMTP Configuration</span></div>`;
+                        return;
+                    }
+                }
+            }
+
+            const randomIndex = Math.floor(Math.random() * (senderEmails.length || 1));
+            const randomSenderEmail = senderEmails[randomIndex] || 'default@example.com';
+            const randomSenderName = senderNames[Math.floor(Math.random() * senderNames.length)];
+            const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+            const messageLetter = getRandomMessage(mainMessageLetter);
+            const processedMessage = leafClear(messageLetter, "username@domain.com");
+
+            const mimeMessage = `From: ${randomSenderName} <${randomSenderEmail}>\r\n` +
+                                `To: username@domain.com\r\n` +
+                                `Subject: ${randomSubject}\r\n` +
+                                `Content-Type: ${messageType === "1" ? "text/html" : "text/plain"}; charset=UTF-8\r\n` +
+                                `\r\n` +
+                                processedMessage;
+
+            try {
+                const response = await fetch('http://localhost:8000/check-spam-score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        'email_content': mimeMessage,
+                        'sender_email': randomSenderEmail,
+                        'subject': randomSubject,
+                        'sender_name': randomSenderName
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    const score = data.score;
+                    const className = score > data.threshold ? 'danger' : 'success';
+                    document.getElementById('resultArea').innerHTML = `
+                        <div class="result-container">
+                            <div class="text-${className}">Spam Score: ${score} (Threshold: ${data.threshold})</div>
+                            <div>Content Result: ${data.content_result}</div>
+                            <div>Blacklist Listings: ${data.blacklist_count}/${Object.keys(data.blacklist_status || {}).length}</div>
+                            <pre>${data.report}</pre>
+                        </div>
+                    `;
+                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
+                } else {
+                    document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
+                }
+            } catch (error) {
+                console.error('Spam check error:', error);
+                let errorMsg = 'Failed to check spam score. ';
+                if (error.message.includes('fetch')) {
+                    errorMsg += 'Server might not be running or is unreachable. Please ensure the server is running on http://localhost:8000.';
+                } else {
+                    errorMsg += `Error: ${error.message}`;
+                }
+                document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">${errorMsg}</span></div>`;
+            }
+        }
+
+        let smtpCounter = 0;
+        let originalSettings = null;
+
+        function addSmtpSection(smtpData = {}) {
+            smtpCounter++;
+            const smtpId = `smtp-${smtpCounter}`;
+            const smtpSection = document.createElement('div');
+            smtpSection.className = 'smtp-section';
+            smtpSection.id = smtpId;
+            smtpSection.innerHTML = `
+                <h5>SMTP Configuration ${smtpCounter}</h5>
+                <div class="form-group">
+                    <label for="${smtpId}-server">SMTP Server</label>
+                    <input type="text" class="form-control" id="${smtpId}-server" placeholder="e.g., smtp.example.com" value="${smtpData.server || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="${smtpId}-port">SMTP Port</label>
+                    <input type="number" class="form-control" id="${smtpId}-port" placeholder="e.g., 587" value="${smtpData.port || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="${smtpId}-email">SMTP Email <span style="color: red;">*</span></label>
+                    <input type="email" class="form-control" id="${smtpId}-email" placeholder="e.g., user@example.com" value="${smtpData.email || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label for="${smtpId}-password">SMTP Password <span style="color: red;">*</span></label>
+                    <input type="password" class="form-control" id="${smtpId}-password" placeholder="Enter password" value="${smtpData.password || ''}" required>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="removeSmtpSection('${smtpId}')">Remove SMTP</button>
+            `;
+            document.getElementById('smtpSections').appendChild(smtpSection);
+            addSmtpEventListeners(smtpId);
+            showSaveButton();
+        }
+
+        function removeSmtpSection(smtpId) {
+            const section = document.getElementById(smtpId);
+            if (section) {
+                section.remove();
+                updateSettingsAfterRemoval();
+                showSaveButton();
+            }
+        }
+
+        function addSmtpEventListeners(smtpId) {
+            const inputs = [
+                `${smtpId}-server`,
+                `${smtpId}-port`,
+                `${smtpId}-email`,
+                `${smtpId}-password`
+            ];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', showSaveButton);
+                    element.addEventListener('change', showSaveButton);
+                }
+            });
+        }
+
+        function showSettings() {
+            originalSettings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            loadSettings();
+            addGlobalEventListeners();
+            $('#settingsModal').modal('show');
+        }
+
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            document.getElementById('smtpSections').innerHTML = '';
+            smtpCounter = 0;
+
+            const smtps = settings.smtps || [];
+            smtps.forEach(smtp => addSmtpSection(smtp));
+
+            document.getElementById('replyToName').value = settings.replyToName || '';
+            document.getElementById('replyToEmail').value = settings.replyToEmail || '';
+            document.getElementById('unsubscribeLink').value = settings.unsubscribeLink || '';
+            document.getElementById('unsubscribeEmail').value = settings.unsubscribeEmail || '';
+            document.getElementById('unsubscribeScript').value = settings.unsubscribeScript || '';
+            document.getElementById('emailSenderUrl').value = settings.emailSenderUrl || '';
+            document.getElementById('proxyType').value = settings.proxyType || 'socks5';
+            document.getElementById('proxy').value = settings.proxy || '';
+            document.getElementById('smtpEmailLimit').value = settings.smtpEmailLimit || '';
+            document.getElementById('sendInterval').value = settings.sendInterval || '';
+            document.getElementById('sleepTime').value = settings.sleepTime || '';
+            document.getElementById('useLink').value = settings.useLink || 'no';
+            document.getElementById('useMultiThreading').value = settings.useMultiThreading || 'no';
+            document.getElementById('maxThreads').value = settings.maxThreads || '';
+            document.getElementById('maxRetries').value = settings.maxRetries || '3';
+        }
+
+        function addGlobalEventListeners() {
+            const globalInputs = [
+                'replyToName', 'replyToEmail', 'unsubscribeLink', 'unsubscribeEmail', 'unsubscribeScript',
+                'emailSenderUrl', 'proxyType', 'proxy', 'smtpEmailLimit', 'sendInterval', 'sleepTime', 
+                'useLink', 'useMultiThreading', 'maxThreads', 'maxRetries'
+            ];
+            globalInputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', showSaveButton);
+                    element.addEventListener('change', showSaveButton);
+                }
+            });
+        }
+
+        function updateSettingsAfterRemoval() {
+            const smtpSections = document.querySelectorAll('.smtp-section');
+            const smtps = Array.from(smtpSections).map(section => ({
+                server: section.querySelector('input[id$="-server"]').value.trim(),
+                port: section.querySelector('input[id$="-port"]').value.trim(),
+                email: section.querySelector('input[id$="-email"]').value.trim(),
+                password: section.querySelector('input[id$="-password"]').value.trim()
+            }));
+
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            settings.smtps = smtps;
+            localStorage.setItem('smtpSettings', JSON.stringify(settings));
+        }
+
+        function showSaveButton() {
+            document.getElementById('saveButtonContainer').style.display = 'block';
+        }
+
+        function saveSettings() {
+            const smtpSections = document.querySelectorAll('.smtp-section');
+            const smtps = Array.from(smtpSections).map(section => ({
+                server: section.querySelector('input[id$="-server"]').value.trim(),
+                port: section.querySelector('input[id$="-port"]').value.trim(),
+                email: section.querySelector('input[id$="-email"]').value.trim(),
+                password: section.querySelector('input[id$="-password"]').value.trim()
+            }));
+
+            const settings = {
+                smtps,
+                replyToName: document.getElementById('replyToName').value.trim(),
+                replyToEmail: document.getElementById('replyToEmail').value.trim(),
+                unsubscribeLink: document.getElementById('unsubscribeLink').value.trim(),
+                unsubscribeEmail: document.getElementById('unsubscribeEmail').value.trim(),
+                unsubscribeScript: document.getElementById('unsubscribeScript').value.trim(),
+                emailSenderUrl: document.getElementById('emailSenderUrl').value.trim(),
+                proxyType: document.getElementById('proxyType').value,
+                proxy: document.getElementById('proxy').value.trim(),
+                smtpEmailLimit: document.getElementById('smtpEmailLimit').value.trim(),
+                sendInterval: document.getElementById('sendInterval').value.trim(),
+                sleepTime: document.getElementById('sleepTime').value.trim(),
+                useLink: document.getElementById('useLink').value,
+                useMultiThreading: document.getElementById('useMultiThreading').value,
+                maxThreads: document.getElementById('maxThreads').value.trim(),
+                maxRetries: document.getElementById('maxRetries').value.trim()
+            };
+
+            if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
+                alert('Error: Email Sender URL is required when Use Link is enabled.');
+                return;
+            }
+
+            localStorage.setItem('smtpSettings', JSON.stringify(settings));
+            originalSettings = settings;
+            document.getElementById('saveButtonContainer').style.display = 'none';
+            $('#settingsModal').modal('hide');
+            alert('Settings saved successfully!');
+        }
+    </script>
+</body>
+</html>
