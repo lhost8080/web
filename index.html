@@ -151,7 +151,7 @@
                 <li><b>Note:</b> When "Use Link" is enabled, sender email is optional; defaults to the link's sender if not provided.</li>
             </ul>
             <h4>Example</h4>
-            Receiver Email = <b>user@domain.com</b><br>
+            Receiver Email = <b>user@domain.com</b><bfc <br>
             <ul>
                 <li>hello <b>[-emailuser-]</b> = hello <b>user</b></li>
                 <li>your domain is <b>[-emaildomain-]</b> = Your Domain is <b>domain.com</b></li>
@@ -778,8 +778,6 @@
             document.getElementById('emailSenderUrl').value = settings.emailSenderUrl || '';
             document.getElementById('proxyType').value = settings.proxyType || 'socks5';
             document.getElementById('proxy').value = settings.proxy || '';
-            document.getElementById('smtpEmailLimit').value = settings.smtpEmailLimit || '';
-            document.getElementById('sendInterval').value = settings.sendInterval || '';
             document.getElementById('sleepTime').value = settings.sleepTime || '';
             document.getElementById('useLink').value = settings.useLink || 'no';
             document.getElementById('useMultiThreading').value = settings.useMultiThreading || 'no';
@@ -790,7 +788,7 @@
         function addGlobalEventListeners() {
             const globalInputs = [
                 'replyToName', 'replyToEmail', 'unsubscribeLink', 'unsubscribeEmail', 'unsubscribeScript',
-                'emailSenderUrl', 'proxyType', 'proxy', 'smtpEmailLimit', 'sendInterval', 'sleepTime', 
+                'emailSenderUrl', 'proxyType', 'proxy', 'sleepTime', 
                 'useLink', 'useMultiThreading', 'maxThreads', 'maxRetries'
             ];
             globalInputs.forEach(id => {
@@ -836,11 +834,11 @@
                 unsubscribeLink: document.getElementById('unsubscribeLink').value.trim(),
                 unsubscribeEmail: document.getElementById('unsubscribeEmail').value.trim(),
                 unsubscribeScript: document.getElementById('unsubscribeScript').value.trim(),
-                useLink: document.getElementById('useLink').value,
                 emailSenderUrl: document.getElementById('emailSenderUrl').value.trim(),
                 proxyType: document.getElementById('proxyType').value,
                 proxy: document.getElementById('proxy').value.trim(),
                 sleepTime: document.getElementById('sleepTime').value.trim(),
+                useLink: document.getElementById('useLink').value,
                 useMultiThreading: document.getElementById('useMultiThreading').value,
                 maxThreads: document.getElementById('maxThreads').value.trim(),
                 maxRetries: document.getElementById('maxRetries').value.trim()
