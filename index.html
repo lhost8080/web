@@ -492,20 +492,27 @@
         }
 
         let uploadedMessages = [];
+        let uploadPromises = []; // Track FileReader promises
+
         document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
             uploadedMessages = [];
+            uploadPromises = [];
             const files = e.target.files;
             for (let file of files) {
                 const reader = new FileReader();
-                reader.onload = function(event) {
-                    uploadedMessages.push(event.target.result);
-                };
-                reader.readAsText(file);
+                const promise = new Promise((resolve) => {
+                    reader.onload = function(event) {
+                        uploadedMessages.push(event.target.result);
+                        resolve();
+                    };
+                    reader.readAsText(file);
+                });
+                uploadPromises.push(promise);
             }
         });
 
         function getRandomMessage(mainMessage) {
-            if (uploadedMessages.length > 0 && Math.random() > 0.5) {
+            if (uploadedMessages.length > 0) {
                 return uploadedMessages[Math.floor(Math.random() * uploadedMessages.length)];
             }
             return mainMessage;
@@ -553,6 +560,12 @@
                 return;
             }
 
+            // Wait for all uploaded files to be read
+            if (uploadPromises.length > 0) {
+                await Promise.all(uploadPromises);
+                console.log("All files read. Uploaded messages:", uploadedMessages);
+            }
+
             sendResultArea.innerHTML = '<div class="result-container"></div>';
             const resultContainer = sendResultArea.querySelector('.result-container');
 
@@ -592,30 +605,20 @@
                     }
 
                     const result = await response.json();
-                    // Directly append the server's resultHtml, which includes "OK" or "Failed - Invalid SMTP Credentials"
                     resultContainer.innerHTML += result.resultHtml;
                 } catch (error) {
                     console.error('Fetch error for email:', email, error);
                     let resultHtml = '';
                     if (error.message.includes('Sender email does not match SMTP Configuration')) {
                         resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
-                        resultContainer.innerHTML = resultHtml;
-                        isSending = false;
-                        return;
                     } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
                         resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
-                        resultContainer.innerHTML = resultHtml;
-                        isSending = false;
-                        return;
                     } else if (error.message.includes('No message provided')) {
                         resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
-                        resultContainer.innerHTML = resultHtml;
-                        isSending = false;
-                        return;
                     } else {
                         resultHtml = `<div class='col-lg-1'>[${i + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`;
-                        resultContainer.innerHTML += resultHtml;
                     }
+                    resultContainer.innerHTML += resultHtml;
                 }
 
                 if (i < emailList.length - 1 && sleepTime > 0) {
@@ -664,6 +667,11 @@
                         return;
                     }
                 }
+            }
+
+            // Wait for uploaded files to be read before checking spam score
+            if (uploadPromises.length > 0) {
+                await Promise.all(uploadPromises);
             }
 
             const randomIndex = Math.floor(Math.random() * (senderEmails.length || 1));
