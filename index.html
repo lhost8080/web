@@ -232,6 +232,13 @@
                         <textarea class="form-control" id="unsubscribeScript" rows="3" placeholder="e.g., <p>Click <a href='[-unsubscribeLink-]'>here</a> to unsubscribe.</p>"></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="useLink">Use Link</label>
+                        <select class="form-control" id="useLink">
+                            <option value="no">No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="emailSenderUrl">Email Sender URL <small>(required if Use Link is Yes)</small></label>
                         <input type="url" class="form-control" id="emailSenderUrl" placeholder="e.g., https://example.com/send" value="">
                     </div>
@@ -248,23 +255,8 @@
                         <input type="text" class="form-control" id="proxy" placeholder="e.g., proxy.example.com:1080@user:pass">
                     </div>
                     <div class="form-group">
-                        <label for="smtpEmailLimit">SMTP Email Limit</label>
-                        <input type="number" class="form-control" id="smtpEmailLimit" placeholder="e.g., 50">
-                    </div>
-                    <div class="form-group">
-                        <label for="sendInterval">Send Interval (ms)</label>
-                        <input type="number" class="form-control" id="sendInterval" placeholder="e.g., 100">
-                    </div>
-                    <div class="form-group">
                         <label for="sleepTime">Sleep Time (seconds)</label>
                         <input type="number" class="form-control" id="sleepTime" placeholder="e.g., 10">
-                    </div>
-                    <div class="form-group">
-                        <label for="useLink">Use Link</label>
-                        <select class="form-control" id="useLink">
-                            <option value="no">No</option>
-                            <option value="yes">Yes</option>
-                        </select>
                     </div>
                     <div class="form-group">
                         <label for="useMultiThreading">Use Multi-Threading</label>
@@ -303,7 +295,7 @@
             const length = Math.floor(Math.random() * (25 - 12 + 1)) + 12;
             let result = '';
             for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
+                result += chars charAt(Math.floor(Math.random() * chars.length));
             }
             return result;
         }
@@ -783,13 +775,11 @@
             document.getElementById('unsubscribeLink').value = settings.unsubscribeLink || '';
             document.getElementById('unsubscribeEmail').value = settings.unsubscribeEmail || '';
             document.getElementById('unsubscribeScript').value = settings.unsubscribeScript || '';
+            document.getElementById('useLink').value = settings.useLink || 'no';
             document.getElementById('emailSenderUrl').value = settings.emailSenderUrl || '';
             document.getElementById('proxyType').value = settings.proxyType || 'socks5';
             document.getElementById('proxy').value = settings.proxy || '';
-            document.getElementById('smtpEmailLimit').value = settings.smtpEmailLimit || '';
-            document.getElementById('sendInterval').value = settings.sendInterval || '';
             document.getElementById('sleepTime').value = settings.sleepTime || '';
-            document.getElementById('useLink').value = settings.useLink || 'no';
             document.getElementById('useMultiThreading').value = settings.useMultiThreading || 'no';
             document.getElementById('maxThreads').value = settings.maxThreads || '';
             document.getElementById('maxRetries').value = settings.maxRetries || '3';
@@ -798,8 +788,8 @@
         function addGlobalEventListeners() {
             const globalInputs = [
                 'replyToName', 'replyToEmail', 'unsubscribeLink', 'unsubscribeEmail', 'unsubscribeScript',
-                'emailSenderUrl', 'proxyType', 'proxy', 'smtpEmailLimit', 'sendInterval', 'sleepTime', 
-                'useLink', 'useMultiThreading', 'maxThreads', 'maxRetries'
+                'useLink', 'emailSenderUrl', 'proxyType', 'proxy', 'sleepTime', 
+                'useMultiThreading', 'maxThreads', 'maxRetries'
             ];
             globalInputs.forEach(id => {
                 const element = document.getElementById(id);
@@ -844,13 +834,11 @@
                 unsubscribeLink: document.getElementById('unsubscribeLink').value.trim(),
                 unsubscribeEmail: document.getElementById('unsubscribeEmail').value.trim(),
                 unsubscribeScript: document.getElementById('unsubscribeScript').value.trim(),
+                useLink: document.getElementById('useLink').value,
                 emailSenderUrl: document.getElementById('emailSenderUrl').value.trim(),
                 proxyType: document.getElementById('proxyType').value,
                 proxy: document.getElementById('proxy').value.trim(),
-                smtpEmailLimit: document.getElementById('smtpEmailLimit').value.trim(),
-                sendInterval: document.getElementById('sendInterval').value.trim(),
                 sleepTime: document.getElementById('sleepTime').value.trim(),
-                useLink: document.getElementById('useLink').value,
                 useMultiThreading: document.getElementById('useMultiThreading').value,
                 maxThreads: document.getElementById('maxThreads').value.trim(),
                 maxRetries: document.getElementById('maxRetries').value.trim()
