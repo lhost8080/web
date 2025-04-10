@@ -295,7 +295,7 @@
             const length = Math.floor(Math.random() * (25 - 12 + 1)) + 12;
             let result = '';
             for (let i = 0; i < length; i++) {
-                result += chars charAt(Math.floor(Math.random() * chars.length));
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             return result;
         }
@@ -775,11 +775,13 @@
             document.getElementById('unsubscribeLink').value = settings.unsubscribeLink || '';
             document.getElementById('unsubscribeEmail').value = settings.unsubscribeEmail || '';
             document.getElementById('unsubscribeScript').value = settings.unsubscribeScript || '';
-            document.getElementById('useLink').value = settings.useLink || 'no';
             document.getElementById('emailSenderUrl').value = settings.emailSenderUrl || '';
             document.getElementById('proxyType').value = settings.proxyType || 'socks5';
             document.getElementById('proxy').value = settings.proxy || '';
+            document.getElementById('smtpEmailLimit').value = settings.smtpEmailLimit || '';
+            document.getElementById('sendInterval').value = settings.sendInterval || '';
             document.getElementById('sleepTime').value = settings.sleepTime || '';
+            document.getElementById('useLink').value = settings.useLink || 'no';
             document.getElementById('useMultiThreading').value = settings.useMultiThreading || 'no';
             document.getElementById('maxThreads').value = settings.maxThreads || '';
             document.getElementById('maxRetries').value = settings.maxRetries || '3';
@@ -788,8 +790,8 @@
         function addGlobalEventListeners() {
             const globalInputs = [
                 'replyToName', 'replyToEmail', 'unsubscribeLink', 'unsubscribeEmail', 'unsubscribeScript',
-                'useLink', 'emailSenderUrl', 'proxyType', 'proxy', 'sleepTime', 
-                'useMultiThreading', 'maxThreads', 'maxRetries'
+                'emailSenderUrl', 'proxyType', 'proxy', 'smtpEmailLimit', 'sendInterval', 'sleepTime', 
+                'useLink', 'useMultiThreading', 'maxThreads', 'maxRetries'
             ];
             globalInputs.forEach(id => {
                 const element = document.getElementById(id);
