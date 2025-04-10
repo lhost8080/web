@@ -558,7 +558,8 @@
 
             for (let i = 0; i < emailList.length; i++) {
                 const email = emailList[i];
-                console.log("Sending email..."); // Log for each email being sent
+                console.log("Sending email to:", email); // Log for each email being sent
+
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify([email])); // Send one email at a time
                 formData.append('senderEmails', JSON.stringify(senderEmails));
@@ -591,8 +592,8 @@
                     }
 
                     const result = await response.json();
-                    // Use the original format with "OK"
-                    resultContainer.innerHTML += `<div class='col-lg-1'>[${i + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'><span class='label label-success'>OK</span></div><br>`;
+                    // Directly append the server's resultHtml, which includes "OK" or "Failed - Invalid SMTP Credentials"
+                    resultContainer.innerHTML += result.resultHtml;
                 } catch (error) {
                     console.error('Fetch error for email:', email, error);
                     let resultHtml = '';
