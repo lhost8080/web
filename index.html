@@ -15,18 +15,18 @@
         .smtp-section h5 { margin-top: 0; }
         #updateMessage { 
             display: none; 
-            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
-            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
-            border-radius: 8px; /* Slightly larger radius for a softer look */
-            padding: 15px; /* More padding for breathing room */
-            margin: 15px 0; /* Vertical spacing */
-            color: #856404; /* Darker yellow-brown text for contrast */
+            background: #fff3cd;
+            border: 2px solid #ffca2c;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
             font-weight: bold; 
-            font-size: 16px; /* Slightly larger text */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             max-width: 100%; 
             word-wrap: break-word; 
-            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
+            animation: fadeIn 0.5s ease-in;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -35,23 +35,28 @@
         #resultArea { margin-top: 20px; }
         #sendResultArea { 
             margin-top: 20px; 
-            overflow: hidden; /* Disable all scrollbars */
+            overflow: hidden;
         }
         .result-container { 
             max-width: 100%; 
-            overflow-x: auto; /* Default for other result areas */
+            overflow-x: auto;
         }
         #sendResultArea .result-container { 
-            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
-            word-wrap: break-word; /* Ensure text wraps */
+            overflow: hidden;
+            word-wrap: break-word;
+            display: flex;
+            flex-direction: column;
+            gap: 5px; /* Space between email results */
         }
-        #sendResultArea .result-item { 
-            margin-bottom: 5px; /* Spacing between items */
+        .email-result {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Space between number, email, and status */
+            flex-wrap: wrap; /* Allow wrapping if needed */
         }
-        .result-container table { width: 100%; max-width: 100%; }
-        .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
-        .result-container table th:first-child { width: 70%; }
-        .result-container table th:last-child { width: 30%; }
+        .email-number { min-width: 50px; }
+        .email-address { flex: 1; min-width: 200px; }
+        .email-status { min-width: 100px; }
     </style>
 </head>
 <body>
@@ -483,11 +488,11 @@
                 }
                 resultHtml += '</table></div>';
                 document.getElementById('resultArea').innerHTML = resultHtml;
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             } catch (error) {
                 console.error('Blacklist check error:', error);
                 document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status. Please try again later.</span></div>';
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             }
         }
 
@@ -559,50 +564,37 @@
                 formData.append('attachments', attachments[i]);
             }
 
-            const sleepTime = parseInt(settings.sleepTime || 0) * 1000; // Convert seconds to milliseconds
-            let resultHtml = '';
             document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Sending emails...</div>';
 
-            for (let i = 0; i < emailList.length; i++) {
-                const email = emailList[i];
-                try {
-                    const response = await fetch('http://localhost:8000/send-emails', {
-                        method: 'POST',
-                        body: formData,
-                        signal: AbortSignal.timeout(30000)
-                    });
+            try {
+                const response = await fetch('http://localhost:8000/send-emails', {
+                    method: 'POST',
+                    body: formData,
+                    signal: AbortSignal.timeout(60000) // Increased timeout to 60s for larger lists
+                });
 
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.resultHtml || 'Unknown error occurred';
-                        throw new Error(errorMessage);
-                    }
-
-                    const result = await response.json();
-                    resultHtml += result.resultHtml.split('<br>')[i]; // Extract the result for this email
-                    document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${resultHtml}</div>`;
-                } catch (error) {
-                    console.error('Fetch error:', error);
-                    let errorResult = '';
-                    if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        errorResult = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
-                    } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        errorResult = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
-                    } else if (error.message.includes('No message provided')) {
-                        errorResult = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
-                    } else if (!isValidEmail(email)) {
-                        errorResult = `<div class="result-item">[${i + 1}/${emailList.length}] ${email} <span class="label label-default">Incorrect Email</span></div>`;
-                    } else {
-                        errorResult = `<div class="result-item">[${i + 1}/${emailList.length}] ${email} <span class="label label-default">Failed</span></div>`;
-                    }
-                    resultHtml += errorResult;
-                    document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${resultHtml}</div>`;
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    const errorMessage = errorData.resultHtml || 'Unknown error occurred';
+                    throw new Error(errorMessage);
                 }
 
-                // Apply sleep time between emails (except after the last one)
-                if (i < emailList.length - 1 && sleepTime > 0) {
-                    await new Promise(resolve => setTimeout(resolve, sleepTime));
+                const result = await response.json();
+                document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${result.resultHtml}</div>`;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                let errorResult = '<div class="result-container">';
+                if (error.message.includes('Sender email does not match SMTP Configuration')) {
+                    errorResult += '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
+                } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
+                    errorResult += '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
+                } else if (error.message.includes('No message provided')) {
+                    errorResult += '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
+                } else {
+                    errorResult += `<span class="text-danger">Error sending emails: ${error.message}</span>`;
                 }
+                errorResult += '</div>';
+                document.getElementById('sendResultArea').innerHTML = errorResult;
             }
         }
 
@@ -689,7 +681,7 @@
                             <pre>${data.report}</pre>
                         </div>
                     `;
-                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
+                    document.getElementById('sendResultArea').innerHTML = '';
                 } else {
                     document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
                 }
@@ -780,6 +772,7 @@
             smtps.forEach(smtp => addSmtpSection(smtp));
 
             document.getElementById('replyToName').value = settings.replyToName || '';
+            document.getElementById('replyToEmail').value = settings.replyToEmail || '';
             document.getElementById('replyToEmail').value = settings.replyToEmail || '';
             document.getElementById('unsubscribeLink').value = settings.unsubscribeLink || '';
             document.getElementById('unsubscribeEmail').value = settings.unsubscribeEmail || '';
