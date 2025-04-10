@@ -558,6 +558,7 @@
 
             for (let i = 0; i < emailList.length; i++) {
                 const email = emailList[i];
+                console.log("Sending email..."); // Log for each email being sent
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify([email])); // Send one email at a time
                 formData.append('senderEmails', JSON.stringify(senderEmails));
@@ -590,7 +591,8 @@
                     }
 
                     const result = await response.json();
-                    resultContainer.innerHTML += `<div class="result-item">[${i + 1}/${emailList.length}] ${email} <span class="label label-success">Sent</span></div>`;
+                    // Use the original format with "OK"
+                    resultContainer.innerHTML += `<div class='col-lg-1'>[${i + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'><span class='label label-success'>OK</span></div><br>`;
                 } catch (error) {
                     console.error('Fetch error for email:', email, error);
                     let resultHtml = '';
@@ -610,7 +612,7 @@
                         isSending = false;
                         return;
                     } else {
-                        resultHtml = `<div class="result-item">[${i + 1}/${emailList.length}] ${email} ${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div>`;
+                        resultHtml = `<div class='col-lg-1'>[${i + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`;
                         resultContainer.innerHTML += resultHtml;
                     }
                 }
