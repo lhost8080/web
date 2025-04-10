@@ -151,7 +151,7 @@
                 <li><b>Note:</b> When "Use Link" is enabled, sender email is optional; defaults to the link's sender if not provided.</li>
             </ul>
             <h4>Example</h4>
-            Receiver Email = <b>user@domain.com</b><bfc <br>
+            Receiver Email = <b>user@domain.com</b><br>
             <ul>
                 <li>hello <b>[-emailuser-]</b> = hello <b>user</b></li>
                 <li>your domain is <b>[-emaildomain-]</b> = Your Domain is <b>domain.com</b></li>
@@ -512,7 +512,7 @@
         }
 
         async function sendEmails() {
-            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Sending emails, please wait...</div>';
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Preparing to send emails...</div>';
 
             const formData = new FormData();
             const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
@@ -559,41 +559,50 @@
                 formData.append('attachments', attachments[i]);
             }
 
-            try {
-                const response = await fetch('http://localhost:8000/send-emails', {
-                    method: 'POST',
-                    body: formData,
-                    signal: AbortSignal.timeout(30000)
-                });
+            const sleepTime = parseInt(settings.sleepTime || 0) * 1000; // Convert seconds to milliseconds
+            let resultHtml = '';
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Sending emails...</div>';
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    const errorMessage = errorData.resultHtml || 'Unknown error occurred';
-                    throw new Error(errorMessage);
-                }
-
-                const result = await response.json();
-                document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${result.resultHtml}</div>`;
-            } catch (error) {
-                console.error('Fetch error:', error);
-                let resultHtml = '<div class="result-container">';
-                if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                    resultHtml += '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
-                } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                    resultHtml += '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
-                } else if (error.message.includes('No message provided')) {
-                    resultHtml += '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
-                } else {
-                    emailList.forEach((email, index) => {
-                        if (!isValidEmail(email)) {
-                            resultHtml += `<div class="result-item">[${index + 1}/${emailList.length}] ${email} <span class="label label-default">Incorrect Email</span></div>`;
-                        } else {
-                            resultHtml += `<div class="result-item">[${index + 1}/${emailList.length}] ${email} <span class="label label-default">Failed</span></div>`;
-                        }
+            for (let i = 0; i < emailList.length; i++) {
+                const email = emailList[i];
+                try {
+                    const response = await fetch('http://localhost:8000/send-emails', {
+                        method: 'POST',
+                        body: formData,
+                        signal: AbortSignal.timeout(30000)
                     });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.resultHtml || 'Unknown error occurred';
+                        throw new Error(errorMessage);
+                    }
+
+                    const result = await response.json();
+                    resultHtml += result.resultHtml.split('<br>')[i]; // Extract the result for this email
+                    document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${resultHtml}</div>`;
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    let errorResult = '';
+                    if (error.message.includes('Sender email does not match SMTP Configuration')) {
+                        errorResult = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
+                    } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
+                        errorResult = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
+                    } else if (error.message.includes('No message provided')) {
+                        errorResult = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
+                    } else if (!isValidEmail(email)) {
+                        errorResult = `<div class="result-item">[${i + 1}/${emailList.length}] ${email} <span class="label label-default">Incorrect Email</span></div>`;
+                    } else {
+                        errorResult = `<div class="result-item">[${i + 1}/${emailList.length}] ${email} <span class="label label-default">Failed</span></div>`;
+                    }
+                    resultHtml += errorResult;
+                    document.getElementById('sendResultArea').innerHTML = `<div class="result-container">${resultHtml}</div>`;
                 }
-                resultHtml += '</div>';
-                document.getElementById('sendResultArea').innerHTML = resultHtml;
+
+                // Apply sleep time between emails (except after the last one)
+                if (i < emailList.length - 1 && sleepTime > 0) {
+                    await new Promise(resolve => setTimeout(resolve, sleepTime));
+                }
             }
         }
 
