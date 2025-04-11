@@ -571,7 +571,7 @@
             sendResultArea.innerHTML = '<div class="result-container"></div>';
             const resultContainer = sendResultArea.querySelector('.result-container');
 
-            const sendBatch = async (batch) => {
+            const sendBatch = async (batch, startIndex) => {
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify(batch));
                 formData.append('senderEmails', JSON.stringify(senderEmails));
@@ -616,7 +616,7 @@
                         resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
                     } else {
                         resultHtml = batch.map((email, idx) => 
-                            `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                            `<div class='col-lg-1'>[${startIndex + idx + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
                     resultContainer.innerHTML += resultHtml;
@@ -627,17 +627,17 @@
                 // Send emails in batches based on maxThreads
                 for (let i = 0; i < emailList.length; i += maxThreads) {
                     const batch = emailList.slice(i, i + maxThreads);
-                    await sendBatch(batch);
+                    await sendBatch(batch, i);
                     if (i + maxThreads < emailList.length && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
             } else {
-                // Original sequential sending
-                for (let i = 0; i < emailList.length; i++) {
-                    const email = emailList[i];
-                    console.log("Sending email to:", email);
-                    await sendBatch([email]);
+                // Sequential sending
+                for (let i = 0; i < emailList.length; i += 1) {
+                    const batch = [emailList[i]];
+                    console.log("Sending email to:", batch[0]);
+                    await sendBatch(batch, i);
                     if (i < emailList.length - 1 && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
