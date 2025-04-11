@@ -55,7 +55,6 @@
     </style>
 </head>
 <body>
-    <!-- [Existing HTML structure remains unchanged up to the script section] -->
     <div class="container col-lg-6">
         <h3><span class="" style="color: green;"></span> Human Web Sender <small></small></h3><br>
         <form id="mailForm" method="POST" enctype="multipart/form-data">
@@ -527,7 +526,7 @@
             console.log("Sending email..."); // Log when Send button is clicked
 
             const sendResultArea = document.getElementById('sendResultArea');
-            sendResultArea.innerHTML = '<div class="result-container"><span class="text-info">Sending email, please wait...</span></div>';
+            sendResultArea.innerHTML = '<div class="result-container">Sending email, please wait...</div>';
 
             const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
             const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
@@ -569,13 +568,10 @@
                 console.log("All files read. Uploaded messages:", uploadedMessages);
             }
 
-            const resultContainer = document.createElement('div');
-            resultContainer.className = 'result-container';
-            sendResultArea.innerHTML = ''; // Clear initial message
-            sendResultArea.appendChild(resultContainer);
-            let accumulatedResults = ''; // To store all results
+            sendResultArea.innerHTML = '<div class="result-container"></div>';
+            const resultContainer = sendResultArea.querySelector('.result-container');
 
-            const sendBatch = async (batch) => {
+            const sendBatch = async (batch, batchIndices) => {
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify(batch));
                 formData.append('senderEmails', JSON.stringify(senderEmails));
@@ -608,51 +604,48 @@
                     }
 
                     const result = await response.json();
-                    accumulatedResults += result.resultHtml; // Append the result
-                    resultContainer.innerHTML = accumulatedResults; // Update UI with all results
+                    resultContainer.innerHTML += result.resultHtml;
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
                     if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
+                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span><br>';
                     } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
+                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span><br>';
                     } else if (error.message.includes('No message provided')) {
-                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
+                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span><br>';
                     } else {
                         resultHtml = batch.map((email, idx) => 
-                            `<div class='result-item'>[${emailList.indexOf(email) + 1}] ${email}: ${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div>`
+                            `<div class='col-lg-1'>[${batchIndices[idx] + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
-                    accumulatedResults += resultHtml; // Append error result
-                    resultContainer.innerHTML = accumulatedResults; // Update UI with all results
+                    resultContainer.innerHTML += resultHtml;
                 }
             };
 
-            try {
-                if (useMultiThreading && maxThreads > 1) {
-                    // Send emails in batches based on maxThreads
-                    for (let i = 0; i < emailList.length; i += maxThreads) {
-                        const batch = emailList.slice(i, i + maxThreads);
-                        await sendBatch(batch);
-                        if (i + maxThreads < emailList.length && sleepTime > 0) {
-                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
-                        }
-                    }
-                } else {
-                    // Sequential sending
-                    for (let i = 0; i < emailList.length; i++) {
-                        const email = emailList[i];
-                        console.log("Sending email to:", email);
-                        await sendBatch([email]);
-                        if (i < emailList.length - 1 && sleepTime > 0) {
-                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
-                        }
+            if (useMultiThreading && maxThreads > 1) {
+                // Send emails in batches based on maxThreads
+                for (let i = 0; i < emailList.length; i += maxThreads) {
+                    const batch = emailList.slice(i, i + maxThreads);
+                    const batchIndices = Array.from({length: batch.length}, (_, idx) => i + idx);
+                    await sendBatch(batch, batchIndices);
+                    if (i + maxThreads < emailList.length && sleepTime > 0) {
+                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
-            } finally {
-                isSending = false; // Reset flag after all operations complete
+            } else {
+                // Original sequential sending
+                for (let i = 0; i < emailList.length; i++) {
+                    const email = emailList[i];
+                    console.log("Sending email to:", email);
+                    await sendBatch([email], [i]);
+                    if (i < emailList.length - 1 && sleepTime > 0) {
+                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+                    }
+                }
             }
+
+            isSending = false;
         }
 
         async function checkSpamScore() {
