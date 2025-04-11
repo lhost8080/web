@@ -255,8 +255,8 @@
                         <input type="text" class="form-control" id="proxy" placeholder="e.g., proxy.example.com:1080@user:pass">
                     </div>
                     <div class="form-group">
-                        <label for="sleepTime">Sleep Time (seconds)</label>
-                        <input type="number" class="form-control" id="sleepTime" placeholder="e.g., 10">
+                        <label for="sleepTime">Sleep Time <small>(Total per SMTP:Sleep Time (seconds))</small></label>
+                        <input type="text" class="form-control" id="sleepTime" placeholder="e.g., 10:20">
                     </div>
                     <div class="form-group">
                         <label for="useMultiThreading">Use Multi-Threading</label>
@@ -537,7 +537,6 @@
             const charset = document.getElementById('charset').value;
             const encoding = document.getElementById('encode').value;
             const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
-            const sleepTime = parseInt(settings.sleepTime) || 0; // Sleep time in seconds
 
             if (subjects.length === 0) {
                 sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
@@ -569,61 +568,52 @@
             sendResultArea.innerHTML = '<div class="result-container"></div>';
             const resultContainer = sendResultArea.querySelector('.result-container');
 
-            for (let i = 0; i < emailList.length; i++) {
-                const email = emailList[i];
-                console.log("Sending email to:", email); // Log for each email being sent
+            const formData = new FormData();
+            formData.append('emailList', JSON.stringify(emailList)); // Send entire list at once
+            formData.append('senderEmails', JSON.stringify(senderEmails));
+            formData.append('senderNames', JSON.stringify(senderNames));
+            formData.append('subjects', JSON.stringify(subjects));
+            formData.append('mainMessageLetter', mainMessageLetter);
+            formData.append('messageType', messageType);
+            formData.append('charset', charset);
+            formData.append('encoding', encoding);
+            formData.append('smtpSettings', JSON.stringify(settings.smtps || []));
+            formData.append('uploadedMessages', JSON.stringify(uploadedMessages));
+            formData.append('settings', JSON.stringify(settings));
 
-                const formData = new FormData();
-                formData.append('emailList', JSON.stringify([email])); // Send one email at a time
-                formData.append('senderEmails', JSON.stringify(senderEmails));
-                formData.append('senderNames', JSON.stringify(senderNames));
-                formData.append('subjects', JSON.stringify(subjects));
-                formData.append('mainMessageLetter', mainMessageLetter);
-                formData.append('messageType', messageType);
-                formData.append('charset', charset);
-                formData.append('encoding', encoding);
-                formData.append('smtpSettings', JSON.stringify(settings.smtps || []));
-                formData.append('uploadedMessages', JSON.stringify(uploadedMessages));
-                formData.append('settings', JSON.stringify(settings));
+            const attachments = document.getElementById('attachment').files;
+            for (let j = 0; j < attachments.length; j++) {
+                formData.append('attachments', attachments[j]);
+            }
 
-                const attachments = document.getElementById('attachment').files;
-                for (let j = 0; j < attachments.length; j++) {
-                    formData.append('attachments', attachments[j]);
+            try {
+                const response = await fetch('http://localhost:8000/send-emails', {
+                    method: 'POST',
+                    body: formData,
+                    signal: AbortSignal.timeout(60000) // Increase timeout for multi-threading
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    const errorMessage = errorData.resultHtml || 'Unknown error occurred';
+                    throw new Error(errorMessage);
                 }
 
-                try {
-                    const response = await fetch('http://localhost:8000/send-emails', {
-                        method: 'POST',
-                        body: formData,
-                        signal: AbortSignal.timeout(30000)
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.resultHtml || 'Unknown error occurred';
-                        throw new Error(errorMessage);
-                    }
-
-                    const result = await response.json();
-                    resultContainer.innerHTML += result.resultHtml;
-                } catch (error) {
-                    console.error('Fetch error for email:', email, error);
-                    let resultHtml = '';
-                    if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
-                    } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
-                    } else if (error.message.includes('No message provided')) {
-                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
-                    } else {
-                        resultHtml = `<div class='col-lg-1'>[${i + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`;
-                    }
-                    resultContainer.innerHTML += resultHtml;
+                const result = await response.json();
+                resultContainer.innerHTML = result.resultHtml;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                let resultHtml = '';
+                if (error.message.includes('Sender email does not match SMTP Configuration')) {
+                    resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
+                } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
+                    resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
+                } else if (error.message.includes('No message provided')) {
+                    resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
+                } else {
+                    resultHtml = '<span class="text-danger">Failed to send emails. Please check server logs.</span>';
                 }
-
-                if (i < emailList.length - 1 && sleepTime > 0) {
-                    await new Promise(resolve => setTimeout(resolve, sleepTime * 1000)); // Sleep between emails
-                }
+                resultContainer.innerHTML = resultHtml;
             }
 
             isSending = false;
