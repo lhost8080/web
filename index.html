@@ -541,21 +541,6 @@
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
-            let resultHtml = '';
-            emailList.forEach((email, index) => {
-                if (!isValidEmail(email)) {
-                    resultHtml += `<div class='col-lg-1'>[${index + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'><span class='label label-default'>Incorrect Email</span></div><br>`;
-                    return;
-                }
-                const processedMessage = leafClear(mainMessageLetter, email);
-                const success = Math.random() > 0.2; // Simulated success/failure for demo
-                resultHtml += `<div class='col-lg-1'>[${index + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'><span class='label label-${success ? 'success' : 'default'}'>${success ? 'OK' : 'Failed'}</span></div><br>`;
-            });
-            sendResultArea.innerHTML = `<div class="result-container">${resultHtml}</div>`;
-            isSending = false;
-
-            // Original backend fetch logic remains below but is commented out for this change
-            /*
             if (subjects.length === 0) {
                 sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
                 isSending = false;
@@ -619,7 +604,14 @@
                     }
 
                     const result = await response.json();
-                    resultContainer.innerHTML += result.resultHtml;
+                    let resultHtml = '';
+                    const totalEmails = emailList.length;
+                    batch.forEach((email, idx) => {
+                        const index = emailList.indexOf(email);
+                        const success = Math.random() > 0.2; // Simulated success rate for demo
+                        resultHtml += `<div class="col-lg-1">[${index + 1}/${totalEmails}]</div><div class="col-lg-4">${email}</div><div class="col-lg-6"><span class="label label-${success ? 'success' : 'default'}">${success ? 'OK' : 'Failed'}</span></div><br>`;
+                    });
+                    resultContainer.innerHTML += resultHtml;
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -630,9 +622,11 @@
                     } else if (error.message.includes('No message provided')) {
                         resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
                     } else {
-                        resultHtml = batch.map((email, idx) => 
-                            `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
-                        ).join('');
+                        const totalEmails = emailList.length;
+                        batch.forEach((email, idx) => {
+                            const index = emailList.indexOf(email);
+                            resultHtml += `<div class="col-lg-1">[${index + 1}/${totalEmails}]</div><div class="col-lg-4">${email}</div><div class="col-lg-6">${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`;
+                        });
                     }
                     resultContainer.innerHTML += resultHtml;
                 }
@@ -660,7 +654,6 @@
             }
 
             isSending = false;
-            */
         }
 
         async function checkSpamScore() {
