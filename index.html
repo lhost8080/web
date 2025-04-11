@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Web</title>
+    <title>Human Web Sender</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.4.1/cosmo/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://mcusercontent.com/c217b4df7e0ebdb3de8f14353/images/97a20211-7a4c-90b8-a47f-fce53bbc7ca2.png">
     <style>
@@ -568,10 +568,7 @@
                 console.log("All files read. Uploaded messages:", uploadedMessages);
             }
 
-            sendResultArea.innerHTML = '<div class="result-container"></div>';
-            const resultContainer = sendResultArea.querySelector('.result-container');
-
-            const sendBatch = async (batch, startIndex) => {
+            const sendBatch = async (batch) => {
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify(batch));
                 formData.append('senderEmails', JSON.stringify(senderEmails));
@@ -604,7 +601,7 @@
                     }
 
                     const result = await response.json();
-                    resultContainer.innerHTML += result.resultHtml;
+                    sendResultArea.innerHTML = '<div class="result-container">' + result.resultHtml + '</div>';
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -616,10 +613,10 @@
                         resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
                     } else {
                         resultHtml = batch.map((email, idx) => 
-                            `<div class='col-lg-1'>[${startIndex + idx + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                            `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
-                    resultContainer.innerHTML += resultHtml;
+                    sendResultArea.innerHTML = '<div class="result-container">' + resultHtml + '</div>';
                 }
             };
 
@@ -627,17 +624,17 @@
                 // Send emails in batches based on maxThreads
                 for (let i = 0; i < emailList.length; i += maxThreads) {
                     const batch = emailList.slice(i, i + maxThreads);
-                    await sendBatch(batch, i);
+                    await sendBatch(batch);
                     if (i + maxThreads < emailList.length && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
             } else {
-                // Sequential sending
-                for (let i = 0; i < emailList.length; i += 1) {
-                    const batch = [emailList[i]];
-                    console.log("Sending email to:", batch[0]);
-                    await sendBatch(batch, i);
+                // Original sequential sending
+                for (let i = 0; i < emailList.length; i++) {
+                    const email = emailList[i];
+                    console.log("Sending email to:", email);
+                    await sendBatch([email]);
                     if (i < emailList.length - 1 && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
