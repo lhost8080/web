@@ -15,18 +15,18 @@
         .smtp-section h5 { margin-top: 0; }
         #updateMessage { 
             display: none; 
-            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
-            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
-            border-radius: 8px; /* Slightly larger radius for a softer look */
-            padding: 15px; /* More padding for breathing room */
-            margin: 15px 0; /* Vertical spacing */
-            color: #856404; /* Darker yellow-brown text for contrast */
+            background: #fff3cd;
+            border: 2px solid #ffca2c;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
             font-weight: bold; 
-            font-size: 16px; /* Slightly larger text */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             max-width: 100%; 
             word-wrap: break-word; 
-            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
+            animation: fadeIn 0.5s ease-in;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -35,18 +35,18 @@
         #resultArea { margin-top: 20px; }
         #sendResultArea { 
             margin-top: 20px; 
-            overflow: hidden; /* Disable all scrollbars */
+            overflow: hidden;
         }
         .result-container { 
             max-width: 100%; 
-            overflow-x: auto; /* Default for other result areas */
+            overflow-x: auto;
         }
         #sendResultArea .result-container { 
-            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
-            word-wrap: break-word; /* Ensure text wraps */
+            overflow: hidden;
+            word-wrap: break-word;
         }
         #sendResultArea .result-item { 
-            margin-bottom: 5px; /* Spacing between items */
+            margin-bottom: 5px;
         }
         .result-container table { width: 100%; max-width: 100%; }
         .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -483,16 +483,16 @@
                 }
                 resultHtml += '</table></div>';
                 document.getElementById('resultArea').innerHTML = resultHtml;
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             } catch (error) {
                 console.error('Blacklist check error:', error);
-                document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status. Please try again later.</span></div>';
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = '';
             }
         }
 
         let uploadedMessages = [];
-        let uploadPromises = []; // Track FileReader promises
+        let uploadPromises = [];
 
         document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
             uploadedMessages = [];
@@ -518,17 +518,17 @@
             return mainMessage;
         }
 
-        let isSending = false; // Flag to prevent multiple simultaneous sends
+        let isSending = false;
 
         async function sendEmails() {
-            if (isSending) return; // Prevent multiple clicks
+            if (isSending) return;
             isSending = true;
-            console.log("Sending email..."); // Log when Send button is clicked
 
             const sendResultArea = document.getElementById('sendResultArea');
-            sendResultArea.innerHTML = '<div class="result-container">Sending email, please wait...</div>';
+            sendResultArea.innerHTML = '<div class="result-container">Sending emails, please wait...</div>';
 
             const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
+            const totalEmails = emailList.length;
             const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
             const senderNames = document.getElementById('senderName').value.split('|').filter(n => n.trim());
             const subjects = document.getElementById('subject').value.split('|').filter(s => s.trim());
@@ -537,17 +537,17 @@
             const charset = document.getElementById('charset').value;
             const encoding = document.getElementById('encode').value;
             const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
-            const sleepTime = parseInt(settings.sleepTime) || 0; // Sleep time in seconds
+            const sleepTime = parseInt(settings.sleepTime) || 0;
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
             if (subjects.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty.</span></div>';
                 isSending = false;
                 return;
             }
             if (senderNames.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty. Please provide at least one sender name.</span></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty.</span></div>';
                 isSending = false;
                 return;
             }
@@ -562,18 +562,14 @@
                 return;
             }
 
-            // Wait for all uploaded files to be read
-            if (uploadPromises.length > 0) {
-                await Promise.all(uploadPromises);
-                console.log("All files read. Uploaded messages:", uploadedMessages);
-            }
+            await Promise.all(uploadPromises);
 
             sendResultArea.innerHTML = '<div class="result-container"></div>';
             const resultContainer = sendResultArea.querySelector('.result-container');
 
-            const sendBatch = async (batch, batchIndices) => {
+            const sendBatch = async (batch) => {
                 const formData = new FormData();
-                formData.append('emailList', JSON.stringify(batch));
+                formData.append('emailList', JSON.stringify(batch.emails));
                 formData.append('senderEmails', JSON.stringify(senderEmails));
                 formData.append('senderNames', JSON.stringify(senderNames));
                 formData.append('subjects', JSON.stringify(subjects));
@@ -599,46 +595,40 @@
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        const errorMessage = errorData.resultHtml || 'Unknown error occurred';
-                        throw new Error(errorMessage);
+                        throw new Error(errorData.resultHtml || 'Unknown error');
                     }
 
                     const result = await response.json();
                     resultContainer.innerHTML += result.resultHtml;
                 } catch (error) {
-                    console.error('Fetch error for batch:', batch, error);
-                    let resultHtml = '';
+                    let resultHtml = batch.emails.map((email, idx) => 
+                        `<div class="col-lg-1">[${batch.indices[idx] + 1}/${totalEmails}]</div>` +
+                        `<div class="col-lg-4">${email}</div>` +
+                        `<div class="col-lg-6">${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                    ).join('');
                     if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span><br>';
+                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
                     } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span><br>';
+                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
                     } else if (error.message.includes('No message provided')) {
-                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span><br>';
-                    } else {
-                        resultHtml = batch.map((email, idx) => 
-                            `<div class='col-lg-1'>[${batchIndices[idx] + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
-                        ).join('');
+                        resultHtml = '<span class="text-danger">Error: No message provided.</span>';
                     }
                     resultContainer.innerHTML += resultHtml;
                 }
             };
 
             if (useMultiThreading && maxThreads > 1) {
-                // Send emails in batches based on maxThreads
                 for (let i = 0; i < emailList.length; i += maxThreads) {
-                    const batch = emailList.slice(i, i + maxThreads);
-                    const batchIndices = Array.from({length: batch.length}, (_, idx) => i + idx);
-                    await sendBatch(batch, batchIndices);
+                    const batchEmails = emailList.slice(i, i + maxThreads);
+                    const batchIndices = Array.from({ length: batchEmails.length }, (_, idx) => i + idx);
+                    await sendBatch({ indices: batchIndices, emails: batchEmails });
                     if (i + maxThreads < emailList.length && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
             } else {
-                // Original sequential sending
                 for (let i = 0; i < emailList.length; i++) {
-                    const email = emailList[i];
-                    console.log("Sending email to:", email);
-                    await sendBatch([email], [i]);
+                    await sendBatch({ indices: [i], emails: [emailList[i]] });
                     if (i < emailList.length - 1 && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
@@ -664,11 +654,11 @@
                 return;
             }
             if (subjects.length === 0) {
-                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty.</span></div>';
                 return;
             }
             if (senderNames.length === 0) {
-                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty. Please provide at least one sender name.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty.</span></div>';
                 return;
             }
             if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
@@ -688,10 +678,7 @@
                 }
             }
 
-            // Wait for uploaded files to be read before checking spam score
-            if (uploadPromises.length > 0) {
-                await Promise.all(uploadPromises);
-            }
+            await Promise.all(uploadPromises);
 
             const randomIndex = Math.floor(Math.random() * (senderEmails.length || 1));
             const randomSenderEmail = senderEmails[randomIndex] || 'default@example.com';
@@ -736,7 +723,7 @@
                             <pre>${data.report}</pre>
                         </div>
                     `;
-                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
+                    document.getElementById('sendResultArea').innerHTML = '';
                 } else {
                     document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
                 }
@@ -744,7 +731,7 @@
                 console.error('Spam check error:', error);
                 let errorMsg = 'Failed to check spam score. ';
                 if (error.message.includes('fetch')) {
-                    errorMsg += 'Server might not be running or is unreachable. Please ensure the server is running on http://localhost:8000.';
+                    errorMsg += 'Server might not be running or is unreachable.';
                 } else {
                     errorMsg += `Error: ${error.message}`;
                 }
