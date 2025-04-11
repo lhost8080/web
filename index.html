@@ -604,7 +604,7 @@
                     }
 
                     const result = await response.json();
-                    resultContainer.innerHTML = result.resultHtml; // Replace "please wait" with results
+                    resultContainer.innerHTML = result.resultHtml; // Replace "Sending email..." with results
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -619,7 +619,7 @@
                             `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
-                    resultContainer.innerHTML = resultHtml; // Replace "please wait" with error
+                    resultContainer.innerHTML = resultHtml; // Replace "Sending email..." with error
                 }
             };
 
