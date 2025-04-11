@@ -521,9 +521,9 @@
         let isSending = false; // Flag to prevent multiple simultaneous sends
 
         async function sendEmails() {
-            if (isSending) return; // Prevent multiple clicks
+            if (isSending) return;
             isSending = true;
-            console.log("Sending email..."); // Log when Send button is clicked
+            console.log("Sending email...");
 
             const sendResultArea = document.getElementById('sendResultArea');
             sendResultArea.innerHTML = '<div class="result-container">Sending emails, please wait...</div>';
@@ -537,7 +537,7 @@
             const charset = document.getElementById('charset').value;
             const encoding = document.getElementById('encode').value;
             const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
-            const sleepTime = parseInt(settings.sleepTime) || 0; // Sleep time in seconds
+            const sleepTime = parseInt(settings.sleepTime) || 0;
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
@@ -562,11 +562,17 @@
                 return;
             }
 
-            // Wait for all uploaded files to be read
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
                 console.log("All files read. Uploaded messages:", uploadedMessages);
             }
+
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'result-container';
+            sendResultArea.innerHTML = '';
+            sendResultArea.appendChild(resultContainer);
+
+            let sentCount = 0;
 
             const sendBatch = async (batch) => {
                 const formData = new FormData();
@@ -601,7 +607,9 @@
                     }
 
                     const result = await response.json();
-                    sendResultArea.innerHTML = '<div class="result-container">' + result.resultHtml + '</div>';
+                    resultContainer.innerHTML += result.resultHtml;
+                    sentCount += batch.length; // Increment by batch size
+                    console.log(`Sent ${sentCount} emails so far`);
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -616,32 +624,33 @@
                             `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
-                    sendResultArea.innerHTML = '<div class="result-container">' + resultHtml + '</div>';
+                    resultContainer.innerHTML += resultHtml;
                 }
             };
 
-            if (useMultiThreading && maxThreads > 1) {
-                // Send emails in batches based on maxThreads
-                for (let i = 0; i < emailList.length; i += maxThreads) {
-                    const batch = emailList.slice(i, i + maxThreads);
-                    await sendBatch(batch);
-                    if (i + maxThreads < emailList.length && sleepTime > 0) {
-                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+            try {
+                if (useMultiThreading && maxThreads > 1) {
+                    for (let i = 0; i < emailList.length; i += maxThreads) {
+                        const batch = emailList.slice(i, i + maxThreads);
+                        await sendBatch(batch);
+                        if (i + maxThreads < emailList.length && sleepTime > 0) {
+                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+                        }
+                    }
+                } else {
+                    for (let i = 0; i < emailList.length; i++) {
+                        const email = emailList[i];
+                        console.log("Sending email to:", email);
+                        await sendBatch([email]);
+                        if (i < emailList.length - 1 && sleepTime > 0) {
+                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+                        }
                     }
                 }
-            } else {
-                // Original sequential sending
-                for (let i = 0; i < emailList.length; i++) {
-                    const email = emailList[i];
-                    console.log("Sending email to:", email);
-                    await sendBatch([email]);
-                    if (i < emailList.length - 1 && sleepTime > 0) {
-                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
-                    }
-                }
+            } finally {
+                isSending = false;
+                console.log(`Total emails sent: ${sentCount}`);
             }
-
-            isSending = false;
         }
 
         async function checkSpamScore() {
@@ -684,7 +693,6 @@
                 }
             }
 
-            // Wait for uploaded files to be read before checking spam score
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
             }
