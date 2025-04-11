@@ -310,7 +310,14 @@
             return text
                 .replace("[-time-]", new Date().toLocaleString())
                 .replace("[-email-]", email)
-                .replace("[-алина
+                .replace("[-emailuser-]", emailuser)
+                .replace("[-emaildomain-]", emaildomain)
+                .replace("[-randomletters-]", randString('abcdefghijklmnopqrstuvwxyz'))
+                .replace("[-randomstring-]", randString('abcdefghijklmnopqrstuvwxyz0123456789'))
+                .replace("[-randomnumber-]", randString('0123456789'))
+                .replace("[-randommd5-]", md5(randString('abcdefghijklmnopqrstuvwxyz0123456789')))
+                .replace("[-unsubscribeLink-]", settings.unsubscribeLink || '');
+        }
 
         document.getElementById('currentTime').textContent = new Date().toLocaleString();
 
@@ -561,6 +568,9 @@
                 console.log("All files read. Uploaded messages:", uploadedMessages);
             }
 
+            sendResultArea.innerHTML = '<div class="result-container">Sending email, please wait...</div>';
+            const resultContainer = sendResultArea.querySelector('.result-container');
+
             const sendBatch = async (batch) => {
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify(batch));
@@ -594,7 +604,7 @@
                     }
 
                     const result = await response.json();
-                    sendResultArea.innerHTML = '<div class="result-container">' + result.resultHtml + '</div>';
+                    resultContainer.innerHTML = result.resultHtml; // Replace "please wait" with results
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -609,7 +619,7 @@
                             `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
-                    sendResultArea.innerHTML = '<div class="result-container">' + resultHtml + '</div>';
+                    resultContainer.innerHTML = resultHtml; // Replace "please wait" with error
                 }
             };
 
