@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Web Sender</title>
+    <title>Human Web </title>
     <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.4.1/cosmo/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://mcusercontent.com/c217b4df7e0ebdb3de8f14353/images/97a20211-7a4c-90b8-a47f-fce53bbc7ca2.png">
     <style>
@@ -15,18 +15,18 @@
         .smtp-section h5 { margin-top: 0; }
         #updateMessage { 
             display: none; 
-            background: #fff3cd; 
-            border: 2px solid #ffca2c; 
-            border-radius: 8px; 
-            padding: 15px; 
-            margin: 15px 0; 
-            color: #856404; 
+            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
+            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
+            border-radius: 8px; /* Slightly larger radius for a softer look */
+            padding: 15px; /* More padding for breathing room */
+            margin: 15px 0; /* Vertical spacing */
+            color: #856404; /* Darker yellow-brown text for contrast */
             font-weight: bold; 
-            font-size: 16px; 
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+            font-size: 16px; /* Slightly larger text */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
             max-width: 100%; 
             word-wrap: break-word; 
-            animation: fadeIn 0.5s ease-in; 
+            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -35,18 +35,18 @@
         #resultArea { margin-top: 20px; }
         #sendResultArea { 
             margin-top: 20px; 
-            overflow: hidden; 
+            overflow: hidden; /* Disable all scrollbars */
         }
         .result-container { 
             max-width: 100%; 
-            overflow-x: auto; 
+            overflow-x: auto; /* Default for other result areas */
         }
         #sendResultArea .result-container { 
-            overflow: hidden; 
-            word-wrap: break-word; 
+            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
+            word-wrap: break-word; /* Ensure text wraps */
         }
         #sendResultArea .result-item { 
-            margin-bottom: 5px; 
+            margin-bottom: 5px; /* Spacing between items */
         }
         .result-container table { width: 100%; max-width: 100%; }
         .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -492,7 +492,7 @@
         }
 
         let uploadedMessages = [];
-        let uploadPromises = [];
+        let uploadPromises = []; // Track FileReader promises
 
         document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
             uploadedMessages = [];
@@ -518,15 +518,15 @@
             return mainMessage;
         }
 
-        let isSending = false;
+        let isSending = false; // Flag to prevent multiple simultaneous sends
 
         async function sendEmails() {
-            if (isSending) return;
+            if (isSending) return; // Prevent multiple clicks
             isSending = true;
-            console.log("Sending email...");
+            console.log("Sending email..."); // Log when Send button is clicked
 
             const sendResultArea = document.getElementById('sendResultArea');
-            sendResultArea.innerHTML = '<div class="result-container">Sending email, please wait...</div>';
+            sendResultArea.innerHTML = '<div class="result-container"><span class="text-info">Sending email, please wait...</span></div>';
 
             const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
             const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
@@ -537,7 +537,7 @@
             const charset = document.getElementById('charset').value;
             const encoding = document.getElementById('encode').value;
             const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
-            const sleepTime = parseInt(settings.sleepTime) || 0;
+            const sleepTime = parseInt(settings.sleepTime) || 0; // Sleep time in seconds
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
@@ -562,14 +562,17 @@
                 return;
             }
 
+            // Wait for all uploaded files to be read
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
                 console.log("All files read. Uploaded messages:", uploadedMessages);
             }
 
-            sendResultArea.innerHTML = '<div class="result-container"></div>';
-            const resultContainer = sendResultArea.querySelector('.result-container');
-            let sentCount = 0;
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'result-container';
+            sendResultArea.innerHTML = ''; // Clear initial message
+            sendResultArea.appendChild(resultContainer);
+            resultContainer.innerHTML = '<span class="text-info">Sending email, please wait...</span>';
 
             const sendBatch = async (batch) => {
                 const formData = new FormData();
@@ -604,8 +607,7 @@
                     }
 
                     const result = await response.json();
-                    resultContainer.innerHTML += result.resultHtml;
-                    sentCount += batch.length; // Increment by batch size
+                    resultContainer.innerHTML = result.resultHtml; // Replace "please wait" with results
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -620,31 +622,34 @@
                             `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
-                    resultContainer.innerHTML += resultHtml;
+                    resultContainer.innerHTML = resultHtml;
                 }
             };
 
-            if (useMultiThreading && maxThreads > 1) {
-                for (let i = 0; i < emailList.length; i += maxThreads) {
-                    const batch = emailList.slice(i, i + maxThreads);
-                    await sendBatch(batch);
-                    if (i + maxThreads < emailList.length && sleepTime > 0) {
-                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+            try {
+                if (useMultiThreading && maxThreads > 1) {
+                    // Send emails in batches based on maxThreads
+                    for (let i = 0; i < emailList.length; i += maxThreads) {
+                        const batch = emailList.slice(i, i + maxThreads);
+                        await sendBatch(batch);
+                        if (i + maxThreads < emailList.length && sleepTime > 0) {
+                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+                        }
+                    }
+                } else {
+                    // Sequential sending
+                    for (let i = 0; i < emailList.length; i++) {
+                        const email = emailList[i];
+                        console.log("Sending email to:", email);
+                        await sendBatch([email]);
+                        if (i < emailList.length - 1 && sleepTime > 0) {
+                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
+                        }
                     }
                 }
-            } else {
-                for (let i = 0; i < emailList.length; i++) {
-                    const email = emailList[i];
-                    console.log("Sending email to:", email);
-                    await sendBatch([email]);
-                    if (i < emailList.length - 1 && sleepTime > 0) {
-                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
-                    }
-                }
+            } finally {
+                isSending = false; // Reset flag after all operations complete
             }
-
-            console.log(`Total emails sent: ${sentCount}`);
-            isSending = false;
         }
 
         async function checkSpamScore() {
@@ -679,19 +684,15 @@
                 return;
             }
             if (settings.useLink !== 'yes') {
-                let mismatchFound = false;
                 for (let i = 0; i < senderEmails.length; i++) {
                     if (senderEmails[i] !== smtps[i].email) {
-                        mismatchFound = true;
-                        break;
+                        document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Sender email does not match SMTP Configuration</span></div>`;
+                        return;
                     }
-                }
-                if (mismatchFound) {
-                    document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Sender email does not match SMTP Configuration</span></div>`;
-                    return;
                 }
             }
 
+            // Wait for uploaded files to be read before checking spam score
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
             }
@@ -739,7 +740,7 @@
                             <pre>${data.report}</pre>
                         </div>
                     `;
-                    document.getElementById('sendResultArea').innerHTML = '';
+                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
                 } else {
                     document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
                 }
