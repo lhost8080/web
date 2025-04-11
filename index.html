@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Web </title>
+    <title>Human Web Sender</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.4.1/cosmo/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://mcusercontent.com/c217b4df7e0ebdb3de8f14353/images/97a20211-7a4c-90b8-a47f-fce53bbc7ca2.png">
     <style>
@@ -55,6 +55,7 @@
     </style>
 </head>
 <body>
+    <!-- [Existing HTML structure remains unchanged up to the script section] -->
     <div class="container col-lg-6">
         <h3><span class="" style="color: green;"></span> Human Web Sender <small></small></h3><br>
         <form id="mailForm" method="POST" enctype="multipart/form-data">
@@ -572,7 +573,7 @@
             resultContainer.className = 'result-container';
             sendResultArea.innerHTML = ''; // Clear initial message
             sendResultArea.appendChild(resultContainer);
-            resultContainer.innerHTML = '<span class="text-info">Sending email, please wait...</span>';
+            let accumulatedResults = ''; // To store all results
 
             const sendBatch = async (batch) => {
                 const formData = new FormData();
@@ -607,7 +608,8 @@
                     }
 
                     const result = await response.json();
-                    resultContainer.innerHTML = result.resultHtml; // Replace "please wait" with results
+                    accumulatedResults += result.resultHtml; // Append the result
+                    resultContainer.innerHTML = accumulatedResults; // Update UI with all results
                 } catch (error) {
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
@@ -619,10 +621,11 @@
                         resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
                     } else {
                         resultHtml = batch.map((email, idx) => 
-                            `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                            `<div class='result-item'>[${emailList.indexOf(email) + 1}] ${email}: ${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div>`
                         ).join('');
                     }
-                    resultContainer.innerHTML = resultHtml;
+                    accumulatedResults += resultHtml; // Append error result
+                    resultContainer.innerHTML = accumulatedResults; // Update UI with all results
                 }
             };
 
