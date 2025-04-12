@@ -523,7 +523,7 @@
         async function sendEmails() {
             if (isSending) return; // Prevent multiple clicks
             isSending = true;
-            console.log("Sending email...");
+            console.log("Sending email..."); // Log when Send button is clicked
 
             const sendResultArea = document.getElementById('sendResultArea');
             sendResultArea.innerHTML = '<div class="result-container">Sending email, please wait...</div>';
@@ -537,7 +537,7 @@
             const charset = document.getElementById('charset').value;
             const encoding = document.getElementById('encode').value;
             const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
-            const sleepTime = parseInt(settings.sleepTime) || 0;
+            const sleepTime = parseInt(settings.sleepTime) || 0; // Sleep time in seconds
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
@@ -609,14 +609,14 @@
                     console.error('Fetch error for batch:', batch, error);
                     let resultHtml = '';
                     if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span><br>';
+                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
                     } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span><br>';
+                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
                     } else if (error.message.includes('No message provided')) {
-                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span><br>';
+                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span>';
                     } else {
-                        resultHtml = batch.map((email, idx) => 
-                            `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                        resultHtml = batch.map((email) => 
+                            `<div class='col-lg-1'>[!]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
                         ).join('');
                     }
                     resultContainer.innerHTML += resultHtml;
@@ -624,6 +624,7 @@
             };
 
             if (useMultiThreading && maxThreads > 1) {
+                // Send emails in batches based on maxThreads
                 for (let i = 0; i < emailList.length; i += maxThreads) {
                     const batch = emailList.slice(i, i + maxThreads);
                     await sendBatch(batch);
@@ -632,6 +633,7 @@
                     }
                 }
             } else {
+                // Sequential sending
                 for (let i = 0; i < emailList.length; i++) {
                     const email = emailList[i];
                     console.log("Sending email to:", email);
@@ -717,7 +719,7 @@
                 });
 
                 if (!response.ok) {
-                    const errorText_declaration = await response.text();
+                    const errorText = await response.text();
                     throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
                 }
 
