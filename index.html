@@ -15,18 +15,18 @@
         .smtp-section h5 { margin-top: 0; }
         #updateMessage { 
             display: none; 
-            background: #fff3cd;
-            border: 2px solid #ffca2c;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-            color: #856404;
+            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
+            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
+            border-radius: 8px; /* Slightly larger radius for a softer look */
+            padding: 15px; /* More padding for breathing room */
+            margin: 15px 0; /* Vertical spacing */
+            color: #856404; /* Darker yellow-brown text for contrast */
             font-weight: bold; 
-            font-size: 16px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-size: 16px; /* Slightly larger text */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
             max-width: 100%; 
             word-wrap: break-word; 
-            animation: fadeIn 0.5s ease-in;
+            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -35,18 +35,18 @@
         #resultArea { margin-top: 20px; }
         #sendResultArea { 
             margin-top: 20px; 
-            overflow: hidden;
+            overflow: hidden; /* Disable all scrollbars */
         }
         .result-container { 
             max-width: 100%; 
-            overflow-x: auto;
+            overflow-x: auto; /* Default for other result areas */
         }
         #sendResultArea .result-container { 
-            overflow: hidden;
-            word-wrap: break-word;
+            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
+            word-wrap: break-word; /* Ensure text wraps */
         }
         #sendResultArea .result-item { 
-            margin-bottom: 5px;
+            margin-bottom: 5px; /* Spacing between items */
         }
         .result-container table { width: 100%; max-width: 100%; }
         .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -483,16 +483,16 @@
                 }
                 resultHtml += '</table></div>';
                 document.getElementById('resultArea').innerHTML = resultHtml;
-                document.getElementById('sendResultArea').innerHTML = '';
+                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
             } catch (error) {
                 console.error('Blacklist check error:', error);
-                document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status.</span></div>';
-                document.getElementById('sendResultArea').innerHTML = '';
+                document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status. Please try again later.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
             }
         }
 
         let uploadedMessages = [];
-        let uploadPromises = [];
+        let uploadPromises = []; // Track FileReader promises
 
         document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
             uploadedMessages = [];
@@ -518,17 +518,17 @@
             return mainMessage;
         }
 
-        let isSending = false;
+        let isSending = false; // Flag to prevent multiple simultaneous sends
 
         async function sendEmails() {
-            if (isSending) return;
+            if (isSending) return; // Prevent multiple clicks
             isSending = true;
+            console.log("Sending email...");
 
             const sendResultArea = document.getElementById('sendResultArea');
-            sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-info">Sending emails, please wait...</div></div>';
+            sendResultArea.innerHTML = '<div class="result-container">Sending email, please wait...</div>';
 
             const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
-            const totalEmails = emailList.length;
             const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
             const senderNames = document.getElementById('senderName').value.split('|').filter(n => n.trim());
             const subjects = document.getElementById('subject').value.split('|').filter(s => s.trim());
@@ -541,37 +541,37 @@
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
-            // Validation checks
             if (subjects.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Subject field is empty.</div></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
                 isSending = false;
                 return;
             }
             if (senderNames.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Sender Name field is empty.</div></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty. Please provide at least one sender name.</span></div>';
                 isSending = false;
                 return;
             }
             if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
-                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Email Sender URL is required when Use Link is enabled.</div></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Email Sender URL is required when Use Link is enabled.</span></div>';
                 isSending = false;
                 return;
             }
             if (settings.useLink !== 'yes' && senderEmails.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Sender Email is required when Use Link is disabled.</div></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Email is required when Use Link is disabled.</span></div>';
                 isSending = false;
                 return;
             }
 
-            await Promise.all(uploadPromises);
+            // Wait for all uploaded files to be read
+            if (uploadPromises.length > 0) {
+                await Promise.all(uploadPromises);
+                console.log("All files read. Uploaded messages:", uploadedMessages);
+            }
 
-            // Initialize result container but keep the wait message until results arrive
-            const resultContainer = document.createElement('div');
-            resultContainer.className = 'result-container';
-            sendResultArea.innerHTML = '';
-            sendResultArea.appendChild(resultContainer);
+            sendResultArea.innerHTML = '<div class="result-container"></div>';
+            const resultContainer = sendResultArea.querySelector('.result-container');
 
-            const sendBatch = async (batch, batchIndices) => {
+            const sendBatch = async (batch) => {
                 const formData = new FormData();
                 formData.append('emailList', JSON.stringify(batch));
                 formData.append('senderEmails', JSON.stringify(senderEmails));
@@ -599,31 +599,25 @@
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.resultHtml || 'Unknown error');
+                        const errorMessage = errorData.resultHtml || 'Unknown error occurred';
+                        throw new Error(errorMessage);
                     }
 
                     const result = await response.json();
-                    // Clear wait message only when first results arrive
-                    if (resultContainer.innerHTML.includes('Sending emails, please wait...')) {
-                        resultContainer.innerHTML = '';
-                    }
                     resultContainer.innerHTML += result.resultHtml;
                 } catch (error) {
-                    let resultHtml = batch.map((email, idx) => 
-                        `<div class="row"><div class="col-lg-1">[${batchIndices[idx] + 1}/${totalEmails}]</div>` +
-                        `<div class="col-lg-4">${email}</div>` +
-                        `<div class="col-lg-6">${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div></div>`
-                    ).join('');
+                    console.error('Fetch error for batch:', batch, error);
+                    let resultHtml = '';
                     if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        resultHtml = '<div class="row"><div class="col-lg-12"><span class="text-danger">Sender email does not match SMTP Configuration</span></div></div>';
+                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span><br>';
                     } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        resultHtml = '<div class="row"><div class="col-lg-12"><span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span></div></div>';
+                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span><br>';
                     } else if (error.message.includes('No message provided')) {
-                        resultHtml = '<div class="row"><div class="col-lg-12"><span class="text-danger">Error: No message provided.</span></div></div>';
-                    }
-                    // Clear wait message if it’s still there
-                    if (resultContainer.innerHTML.includes('Sending emails, please wait...')) {
-                        resultContainer.innerHTML = '';
+                        resultHtml = '<span class="text-danger">Error: No message provided. Please enter a message in the textarea or upload a message file.</span><br>';
+                    } else {
+                        resultHtml = batch.map((email, idx) => 
+                            `<div class='col-lg-1'>[${emailList.indexOf(email) + 1}]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                        ).join('');
                     }
                     resultContainer.innerHTML += resultHtml;
                 }
@@ -631,16 +625,17 @@
 
             if (useMultiThreading && maxThreads > 1) {
                 for (let i = 0; i < emailList.length; i += maxThreads) {
-                    const batchEmails = emailList.slice(i, i + maxThreads);
-                    const batchIndices = Array.from({ length: batchEmails.length }, (_, idx) => i + idx);
-                    await sendBatch(batchEmails, batchIndices);
+                    const batch = emailList.slice(i, i + maxThreads);
+                    await sendBatch(batch);
                     if (i + maxThreads < emailList.length && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
             } else {
                 for (let i = 0; i < emailList.length; i++) {
-                    await sendBatch([emailList[i]], [i]);
+                    const email = emailList[i];
+                    console.log("Sending email to:", email);
+                    await sendBatch([email]);
                     if (i < emailList.length - 1 && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
@@ -666,11 +661,11 @@
                 return;
             }
             if (subjects.length === 0) {
-                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
                 return;
             }
             if (senderNames.length === 0) {
-                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty.</span></div>';
+                document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty. Please provide at least one sender name.</span></div>';
                 return;
             }
             if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
@@ -690,7 +685,10 @@
                 }
             }
 
-            await Promise.all(uploadPromises);
+            // Wait for uploaded files to be read before checking spam score
+            if (uploadPromises.length > 0) {
+                await Promise.all(uploadPromises);
+            }
 
             const randomIndex = Math.floor(Math.random() * (senderEmails.length || 1));
             const randomSenderEmail = senderEmails[randomIndex] || 'default@example.com';
@@ -719,7 +717,7 @@
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
+                    const errorText_declaration = await response.text();
                     throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
                 }
 
@@ -735,7 +733,7 @@
                             <pre>${data.report}</pre>
                         </div>
                     `;
-                    document.getElementById('sendResultArea').innerHTML = '';
+                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
                 } else {
                     document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
                 }
@@ -743,7 +741,7 @@
                 console.error('Spam check error:', error);
                 let errorMsg = 'Failed to check spam score. ';
                 if (error.message.includes('fetch')) {
-                    errorMsg += 'Server might not be running or is unreachable.';
+                    errorMsg += 'Server might not be running or is unreachable. Please ensure the server is running on http://localhost:8000.';
                 } else {
                     errorMsg += `Error: ${error.message}`;
                 }
