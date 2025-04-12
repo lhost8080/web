@@ -525,7 +525,7 @@
             isSending = true;
 
             const sendResultArea = document.getElementById('sendResultArea');
-            sendResultArea.innerHTML = '<div class="result-container">Sending emails, please wait...</div>';
+            sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-info">Sending emails, please wait...</div></div>';
 
             const emailList = document.getElementById('emailList').value.split('\n').filter(e => e.trim());
             const totalEmails = emailList.length;
@@ -541,35 +541,39 @@
             const useMultiThreading = settings.useMultiThreading === 'yes';
             const maxThreads = parseInt(settings.maxThreads) || 1;
 
+            // Validation checks
             if (subjects.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty.</span></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Subject field is empty.</div></div>';
                 isSending = false;
                 return;
             }
             if (senderNames.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Name field is empty.</span></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Sender Name field is empty.</div></div>';
                 isSending = false;
                 return;
             }
             if (settings.useLink === 'yes' && !settings.emailSenderUrl) {
-                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Email Sender URL is required when Use Link is enabled.</span></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Email Sender URL is required when Use Link is enabled.</div></div>';
                 isSending = false;
                 return;
             }
             if (settings.useLink !== 'yes' && senderEmails.length === 0) {
-                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Sender Email is required when Use Link is disabled.</span></div>';
+                sendResultArea.innerHTML = '<div class="result-container"><div class="alert alert-danger">Error: Sender Email is required when Use Link is disabled.</div></div>';
                 isSending = false;
                 return;
             }
 
             await Promise.all(uploadPromises);
 
-            sendResultArea.innerHTML = '<div class="result-container"></div>';
-            const resultContainer = sendResultArea.querySelector('.result-container');
+            // Initialize result container but keep the wait message until results arrive
+            const resultContainer = document.createElement('div');
+            resultContainer.className = 'result-container';
+            sendResultArea.innerHTML = '';
+            sendResultArea.appendChild(resultContainer);
 
-            const sendBatch = async (batch) => {
+            const sendBatch = async (batch, batchIndices) => {
                 const formData = new FormData();
-                formData.append('emailList', JSON.stringify(batch.emails));
+                formData.append('emailList', JSON.stringify(batch));
                 formData.append('senderEmails', JSON.stringify(senderEmails));
                 formData.append('senderNames', JSON.stringify(senderNames));
                 formData.append('subjects', JSON.stringify(subjects));
@@ -599,19 +603,27 @@
                     }
 
                     const result = await response.json();
+                    // Clear wait message only when first results arrive
+                    if (resultContainer.innerHTML.includes('Sending emails, please wait...')) {
+                        resultContainer.innerHTML = '';
+                    }
                     resultContainer.innerHTML += result.resultHtml;
                 } catch (error) {
-                    let resultHtml = batch.emails.map((email, idx) => 
-                        `<div class="col-lg-1">[${batch.indices[idx] + 1}/${totalEmails}]</div>` +
+                    let resultHtml = batch.map((email, idx) => 
+                        `<div class="row"><div class="col-lg-1">[${batchIndices[idx] + 1}/${totalEmails}]</div>` +
                         `<div class="col-lg-4">${email}</div>` +
-                        `<div class="col-lg-6">${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`
+                        `<div class="col-lg-6">${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div></div>`
                     ).join('');
                     if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                        resultHtml = '<span class="text-danger">Sender email does not match SMTP Configuration</span>';
+                        resultHtml = '<div class="row"><div class="col-lg-12"><span class="text-danger">Sender email does not match SMTP Configuration</span></div></div>';
                     } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                        resultHtml = '<span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span>';
+                        resultHtml = '<div class="row"><div class="col-lg-12"><span class="text-danger">Error: Number of sender emails does not match number of SMTP configurations.</span></div></div>';
                     } else if (error.message.includes('No message provided')) {
-                        resultHtml = '<span class="text-danger">Error: No message provided.</span>';
+                        resultHtml = '<div class="row"><div class="col-lg-12"><span class="text-danger">Error: No message provided.</span></div></div>';
+                    }
+                    // Clear wait message if it’s still there
+                    if (resultContainer.innerHTML.includes('Sending emails, please wait...')) {
+                        resultContainer.innerHTML = '';
                     }
                     resultContainer.innerHTML += resultHtml;
                 }
@@ -621,14 +633,14 @@
                 for (let i = 0; i < emailList.length; i += maxThreads) {
                     const batchEmails = emailList.slice(i, i + maxThreads);
                     const batchIndices = Array.from({ length: batchEmails.length }, (_, idx) => i + idx);
-                    await sendBatch({ indices: batchIndices, emails: batchEmails });
+                    await sendBatch(batchEmails, batchIndices);
                     if (i + maxThreads < emailList.length && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
             } else {
                 for (let i = 0; i < emailList.length; i++) {
-                    await sendBatch({ indices: [i], emails: [emailList[i]] });
+                    await sendBatch([emailList[i]], [i]);
                     if (i < emailList.length - 1 && sleepTime > 0) {
                         await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
