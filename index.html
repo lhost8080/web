@@ -478,8 +478,7 @@
         }
 
         async function checkBlacklist(ip) {
-            document.getElementBy
-            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Checking blacklist status, please wait...</div>';
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><div class="loading-message">Checking blacklist status, please wait...</div></div>';
             try {
                 const response = await fetch(`http://localhost:8000/check-blacklist/${ip}`);
                 if (!response.ok) throw new Error('Failed to fetch blacklist status');
@@ -663,7 +662,7 @@
         }
 
         async function checkSpamScore() {
-            document.getElementById('sendResultArea').innerHTML = '<div class="result-container">Checking spam score, please wait...</div>';
+            document.getElementById('sendResultArea').innerHTML = '<div class="result-container"><div class="loading-message">Checking spam score, please wait...</div></div>';
 
             const senderEmails = document.getElementById('senderEmail').value.split('|').filter(e => e.trim());
             const senderNames = document.getElementById('senderName').value.split('|').filter(n => n.trim());
@@ -735,7 +734,9 @@
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
+                    throw new Error(`Server responded with
+
+ status: ${response.status} - ${errorText}`);
                 }
 
                 const data = await response.json();
