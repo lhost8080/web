@@ -15,18 +15,18 @@
         .smtp-section h5 { margin-top: 0; }
         #updateMessage { 
             display: none; 
-            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
-            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
-            border-radius: 8px; /* Slightly larger radius for a softer look */
-            padding: 15px; /* More padding for breathing room */
-            margin: 15px 0; /* Vertical spacing */
-            color: #856404; /* Darker yellow-brown text for contrast */
+            background: #fff3cd;
+            border: 2px solid #ffca2c;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
             font-weight: bold; 
-            font-size: 16px; /* Slightly larger text */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             max-width: 100%; 
             word-wrap: break-word; 
-            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
+            animation: fadeIn 0.5s ease-in;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -35,18 +35,18 @@
         #resultArea { margin-top: 20px; }
         #sendResultArea { 
             margin-top: 20px; 
-            overflow: hidden; /* Disable all scrollbars */
+            overflow: hidden;
         }
         .result-container { 
             max-width: 100%; 
-            overflow-x: auto; /* Default for other result areas */
+            overflow-x: auto;
         }
         #sendResultArea .result-container { 
-            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
-            word-wrap: break-word; /* Ensure text wraps */
+            overflow: hidden;
+            word-wrap: break-word;
         }
         #sendResultArea .result-item { 
-            margin-bottom: 5px; /* Spacing between items */
+            margin-bottom: 5px;
         }
         .result-container table { width: 100%; max-width: 100%; }
         .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -54,12 +54,11 @@
         .result-container table th:last-child { width: 30%; }
         .loading-message {
             font-weight: bold;
-            color: #31708f; /* Bootstrap info color for visibility */
-            background: #d9edf7; /* Light info background */
+            color: #31708f;
+            background: #d9edf7;
             padding: 10px;
             border-radius: 5px;
             text-align: center;
-            margin-bottom: 10px; /* Space below loading message */
         }
     </style>
 </head>
@@ -492,16 +491,16 @@
                 }
                 resultHtml += '</table></div>';
                 document.getElementById('resultArea').innerHTML = resultHtml;
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             } catch (error) {
                 console.error('Blacklist check error:', error);
                 document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status. Please try again later.</span></div>';
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             }
         }
 
         let uploadedMessages = [];
-        let uploadPromises = []; // Track FileReader promises
+        let uploadPromises = [];
 
         document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
             uploadedMessages = [];
@@ -527,12 +526,12 @@
             return mainMessage;
         }
 
-        let isSending = false; // Flag to prevent multiple simultaneous sends
+        let isSending = false;
 
         async function sendEmails() {
-            if (isSending) return; // Prevent multiple clicks
+            if (isSending) return;
             isSending = true;
-            console.log("Sending email..."); // Log when Send button is clicked
+            console.log("Sending email...");
 
             const sendResultArea = document.getElementById('sendResultArea');
             sendResultArea.innerHTML = '<div class="result-container"><div class="loading-message">Sending email, please wait...</div><div id="emailResults"></div></div>';
@@ -547,9 +546,7 @@
                 const charset = document.getElementById('charset').value;
                 const encoding = document.getElementById('encode').value;
                 const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
-                const sleepTime = parseInt(settings.sleepTime) || 0; // Sleep time in seconds
-                const useMultiThreading = settings.useMultiThreading === 'yes';
-                const maxThreads = parseInt(settings.maxThreads) || 1;
+                const sleepTime = parseInt(settings.sleepTime) || 0;
 
                 if (subjects.length === 0) {
                     sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Subject field is empty. Please provide at least one subject.</span></div>';
@@ -572,97 +569,78 @@
                     return;
                 }
 
-                // Wait for all uploaded files to be read
                 if (uploadPromises.length > 0) {
                     await Promise.all(uploadPromises);
                     console.log("All files read. Uploaded messages:", uploadedMessages);
                 }
 
-                const sendSingleEmail = async (email) => {
-                    const formData = new FormData();
-                    formData.append('emailList', JSON.stringify([email]));
-                    formData.append('senderEmails', JSON.stringify(senderEmails));
-                    formData.append('senderNames', JSON.stringify(senderNames));
-                    formData.append('subjects', JSON.stringify(subjects));
-                    formData.append('mainMessageLetter', mainMessageLetter);
-                    formData.append('messageType', messageType);
-                    formData.append('charset', charset);
-                    formData.append('encoding', encoding);
-                    formData.append('smtpSettings', JSON.stringify(settings.smtps || []));
-                    formData.append('uploadedMessages', JSON.stringify(uploadedMessages));
-                    formData.append('settings', JSON.stringify(settings));
+                const formData = new FormData();
+                formData.append('emailList', JSON.stringify(emailList));
+                formData.append('senderEmails', JSON.stringify(senderEmails));
+                formData.append('senderNames', JSON.stringify(senderNames));
+                formData.append('subjects', JSON.stringify(subjects));
+                formData.append('mainMessageLetter', mainMessageLetter);
+                formData.append('messageType', messageType);
+                formData.append('charset', charset);
+                formData.append('encoding', encoding);
+                formData.append('smtpSettings', JSON.stringify(settings.smtps || []));
+                formData.append('uploadedMessages', JSON.stringify(uploadedMessages));
+                formData.append('settings', JSON.stringify(settings));
 
-                    const attachments = document.getElementById('attachment').files;
-                    for (let j = 0; j < attachments.length; j++) {
-                        formData.append('attachments', attachments[j]);
-                    }
+                const attachments = document.getElementById('attachment').files;
+                for (let j = 0; j < attachments.length; j++) {
+                    formData.append('attachments', attachments[j]);
+                }
 
+                const response = await fetch('http://localhost:8000/send-emails', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    sendResultArea.innerHTML = `<div class="result-container"><span class="text-danger">Error: ${errorData.resultHtml || 'Failed to send emails.'}</span></div>`;
+                    isSending = false;
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let resultHtml = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
                     try {
-                        const response = await fetch('http://localhost:8000/send-emails', {
-                            method: 'POST',
-                            body: formData,
-                            signal: AbortSignal.timeout(30000)
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            const errorMessage = errorData.resultHtml || 'Unknown error occurred';
-                            throw new Error(errorMessage);
+                        const lines = chunk.split('\n');
+                        for (const line of lines) {
+                            if (line.trim()) {
+                                const data = JSON.parse(line);
+                                if (data.resultHtml) {
+                                    resultHtml += data.resultHtml;
+                                    document.getElementById('emailResults').innerHTML += data.resultHtml;
+                                }
+                            }
                         }
-
-                        const result = await response.json();
-                        const emailResults = document.getElementById('emailResults');
-                        if (result.success) {
-                            emailResults.innerHTML += `<div class="result-item"><span class="text-success">${email}: OK</span></div>`;
-                        } else {
-                            emailResults.innerHTML += `<div class="result-item"><span class="text-danger">${email}: Failed</span></div>`;
-                        }
-                    } catch (error) {
-                        console.error('Fetch error for email:', email, error);
-                        const emailResults = document.getElementById('emailResults');
-                        let errorMessage = isValidEmail(email) ? 'Failed' : 'Incorrect Email';
-                        if (error.message.includes('Sender email does not match SMTP Configuration')) {
-                            errorMessage = 'Sender email does not match SMTP Configuration';
-                        } else if (error.message.includes('Number of sender emails does not match number of SMTP configurations')) {
-                            errorMessage = 'Number of sender emails does not match number of SMTP configurations';
-                        } else if (error.message.includes('No message provided')) {
-                            errorMessage = 'No message provided';
-                        }
-                        emailResults.innerHTML += `<div class="result-item"><span class="text-danger">${email}: ${errorMessage}</span></div>`;
+                    } catch (e) {
+                        console.error('Error parsing chunk:', e);
                     }
-                };
 
-                if (useMultiThreading && maxThreads > 1) {
-                    // Process emails in parallel batches
-                    for (let i = 0; i < emailList.length; i += maxThreads) {
-                        const batch = emailList.slice(i, i + maxThreads);
-                        await Promise.all(batch.map(email => sendSingleEmail(email)));
-                        if (i + maxThreads < emailList.length && sleepTime > 0) {
-                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
-                        }
-                    }
-                } else {
-                    // Sequential sending
-                    for (let i = 0; i < emailList.length; i++) {
-                        const email = emailList[i];
-                        console.log("Sending email to:", email);
-                        await sendSingleEmail(email);
-                        if (i < emailList.length - 1 && sleepTime > 0) {
-                            await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
-                        }
+                    if (sleepTime > 0) {
+                        await new Promise(resolve => setTimeout(resolve, sleepTime * 1000));
                     }
                 }
 
-                // Keep the loading message until all emails are processed
-                sendResultArea.innerHTML = sendResultArea.innerHTML; // No-op to keep loading message
-            } catch (error) {
-                console.error('Send emails error:', error);
-                const emailResults = document.getElementById('emailResults');
-                emailResults.innerHTML += `<div class="result-item"><span class="text-danger">Error: Failed to send emails. ${error.message}</span></div>`;
-            } finally {
-                // Clear the loading message after all emails are processed
                 const loadingMessage = sendResultArea.querySelector('.loading-message');
                 if (loadingMessage) loadingMessage.remove();
+
+                sendResultArea.innerHTML = `<div class="result-container">${resultHtml}</div>`;
+            } catch (error) {
+                console.error('Send emails error:', error);
+                sendResultArea.innerHTML = '<div class="result-container"><span class="text-danger">Error: Failed to send emails. Please try again.</span></div>';
+            } finally {
                 isSending = false;
             }
         }
@@ -707,7 +685,6 @@
                 }
             }
 
-            // Wait for uploaded files to be read before checking spam score
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
             }
@@ -755,7 +732,7 @@
                             <pre>${data.report}</pre>
                         </div>
                     `;
-                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
+                    document.getElementById('sendResultArea').innerHTML = '';
                 } else {
                     document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
                 }
