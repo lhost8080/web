@@ -7,26 +7,95 @@
     <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.4.1/cosmo/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://mcusercontent.com/c217b4df7e0ebdb3de8f14353/images/97a20211-7a4c-90b8-a47f-fce53bbc7ca2.png">
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --input-bg: #ffffff;
+            --input-border: #cccccc;
+            --well-bg: #f5f5f5;
+            --pre-bg: #f8f9fa;
+            --update-bg: #fff3cd;
+            --update-border: #ffca2c;
+            --update-text: #856404;
+            --loading-bg: #d9edf7;
+            --loading-text: #31708f;
+            --modal-bg: #ffffff;
+            --modal-text: #333333;
+            --btn-default-bg: #ffffff;
+            --btn-default-text: #333333;
+            --btn-primary-bg: #337ab7;
+            --btn-primary-text: #ffffff;
+            --table-border: #dddddd;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #222222;
+            --text-color: #e0e0e0;
+            --input-bg: #333333;
+            --input-border: #555555;
+            --well-bg: #2c2c2c;
+            --pre-bg: #2c2c2c;
+            --update-bg: #4a3c1a;
+            --update-border: #d4a904;
+            --update-text: #e0c46a;
+            --loading-bg: #2a4a5e;
+            --loading-text: #a3c7d6;
+            --modal-bg: #2c2c2c;
+            --modal-text: #e0e0e0;
+            --btn-default-bg: #333333;
+            --btn-default-text: #e0e0e0;
+            --btn-primary-bg: #286090;
+            --btn-primary-text: #ffffff;
+            --table-border: #444444;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
         .container { margin-top: 20px; }
         .result-box { margin-top: 15px; }
-        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
-        .well { font-size: 14px; }
-        .smtp-section { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        pre {
+            background: var(--pre-bg);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-color);
+        }
+        .well {
+            font-size: 14px;
+            background-color: var(--well-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-color);
+        }
+        .smtp-section {
+            border: 1px solid var(--input-border);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: var(--well-bg);
+            color: var(--text-color);
+        }
         .smtp-section h5 { margin-top: 0; }
         #updateMessage { 
             display: none; 
-            background: #fff3cd; /* Light yellow from Bootstrap's alert-warning */
-            border: 2px solid #ffca2c; /* Stronger yellow-orange border */
-            border-radius: 8px; /* Slightly larger radius for a softer look */
-            padding: 15px; /* More padding for breathing room */
-            margin: 15px 0; /* Vertical spacing */
-            color: #856404; /* Darker yellow-brown text for contrast */
-            font-weight: bold; 
-            font-size: 16px; /* Slightly larger text */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-            max-width: 100%; 
-            word-wrap: break-word; 
-            animation: fadeIn 0.5s ease-in; /* Fade-in animation */
+            background: var(--update-bg);
+            border: 2px solid var(--update-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: var(--update-text);
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            word-wrap: break-word;
+            animation: fadeIn 0.5s ease-in;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -35,34 +104,78 @@
         #resultArea { margin-top: 20px; }
         #sendResultArea { 
             margin-top: 20px; 
-            overflow: hidden; /* Disable all scrollbars */
+            overflow: hidden;
         }
         .result-container { 
             max-width: 100%; 
-            overflow-x: auto; /* Default for other result areas */
+            overflow-x: auto;
         }
         #sendResultArea .result-container { 
-            overflow: hidden; /* Disable scrollbars specifically for sendResultArea */
-            word-wrap: break-word; /* Ensure text wraps */
+            overflow: hidden;
+            word-wrap: break-word;
         }
         #sendResultArea .result-item { 
-            margin-bottom: 5px; /* Spacing between items */
+            margin-bottom: 5px;
         }
-        .result-container table { width: 100%; max-width: 100%; }
-        .result-container table th, .result-container table td { word-wrap: break-word; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+        .result-container table {
+            width: 100%;
+            max-width: 100%;
+            border-color: var(--table-border);
+        }
+        .result-container table th, .result-container table td {
+            word-wrap: break-word;
+            max-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
+            border-color: var(--table-border);
+        }
         .result-container table th:first-child { width: 70%; }
         .result-container table th:last-child { width: 30%; }
         .loading-message {
             font-weight: bold;
-            color: #31708f; /* Bootstrap info color for visibility */
-            background: #d9edf7; /* Light info background */
+            color: var(--loading-text);
+            background: var(--loading-bg);
             padding: 10px;
             border-radius: 5px;
             text-align: center;
         }
+        .form-control {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-color);
+        }
+        .form-control:focus {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-color: #66afe9;
+        }
+        .btn-default {
+            background-color: var(--btn-default-bg);
+            color: var(--btn-default-text);
+            border-color: var(--input-border);
+        }
+        .btn-primary {
+            background-color: var(--btn-primary-bg);
+            color: var(--btn-primary-text);
+        }
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+        }
+        .modal-header, .modal-footer {
+            border-color: var(--input-border);
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
+    <button class="btn btn-default theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
     <div class="container col-lg-6">
         <h3><span class="" style="color: green;"></span> Human Web Sender <small></small></h3><br>
         <form id="mailForm" method="POST" enctype="multipart/form-data">
@@ -327,6 +440,34 @@
                 .replace("[-unsubscribeLink-]", settings.unsubscribeLink || '');
         }
 
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButtonText();
+        }
+
+        function updateThemeButtonText() {
+            const button = document.querySelector('.theme-toggle');
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            button.textContent = currentTheme === 'light' ? 'Dark Theme' : 'Light Theme';
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            updateThemeButtonText();
+        }
+
+        // Load theme on page load
+        window.onload = function() {
+            loadTheme();
+            startPeriodicChecks();
+        };
+
         document.getElementById('currentTime').textContent = new Date().toLocaleString();
 
         let serverIp = "Unknown";
@@ -392,8 +533,6 @@
             setInterval(checkImportantUpdates, 30000);
             setInterval(checkSoftwareUpdates, 3600000);
         }
-
-        window.onload = startPeriodicChecks;
 
         function previewMessage() {
             const message = document.getElementById('messageLetter').value;
@@ -491,16 +630,16 @@
                 }
                 resultHtml += '</table></div>';
                 document.getElementById('resultArea').innerHTML = resultHtml;
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             } catch (error) {
                 console.error('Blacklist check error:', error);
                 document.getElementById('resultArea').innerHTML = '<div class="result-container"><span class="text-danger">Failed to check blacklist status. Please try again later.</span></div>';
-                document.getElementById('sendResultArea').innerHTML = ''; // Clear the loading message
+                document.getElementById('sendResultArea').innerHTML = '';
             }
         }
 
         let uploadedMessages = [];
-        let uploadPromises = []; // Track FileReader promises
+        let uploadPromises = [];
 
         document.getElementById('messageLetterUpload').addEventListener('change', function(e) {
             uploadedMessages = [];
@@ -526,10 +665,10 @@
             return mainMessage;
         }
 
-        let isSending = false; // Flag to prevent multiple simultaneous sends
+        let isSending = false;
 
         async function sendEmails() {
-            if (isSending) return; // Prevent multiple clicks
+            if (isSending) return;
             isSending = true;
             console.log("Sending email...");
 
@@ -571,7 +710,6 @@
                     return;
                 }
 
-                // Wait for all uploaded files to be read
                 if (uploadPromises.length > 0) {
                     await Promise.all(uploadPromises);
                     console.log("All files read. Uploaded messages:", uploadedMessages);
@@ -612,7 +750,6 @@
                         }
 
                         const result = await response.json();
-                        // Append result immediately
                         const resultItem = document.createElement('div');
                         resultItem.className = 'result-item';
                         resultItem.innerHTML = result.resultHtml;
@@ -630,7 +767,6 @@
                         } else {
                             resultHtml = `<div class='col-lg-1'>[!]</div><div class='col-lg-4'>${email}</div><div class='col-lg-6'>${isValidEmail(email) ? '<span class="label label-default">Failed</span>' : '<span class="label label-default">Incorrect Email</span>'}</div><br>`;
                         }
-                        // Append error result immediately
                         const resultItem = document.createElement('div');
                         resultItem.className = 'result-item';
                         resultItem.innerHTML = resultHtml;
@@ -640,7 +776,6 @@
                 };
 
                 if (useMultiThreading && maxThreads > 1) {
-                    // Process emails in batches
                     for (let i = 0; i < emailList.length; i += maxThreads) {
                         const batch = emailList.slice(i, i + maxThreads);
                         const promises = batch.map((email, idx) => sendEmail(email, i + idx));
@@ -650,7 +785,6 @@
                         }
                     }
                 } else {
-                    // Sequential sending
                     for (let i = 0; i < emailList.length; i++) {
                         await sendEmail(emailList[i], i);
                         if (i < emailList.length - 1 && sleepTime > 0) {
@@ -659,7 +793,6 @@
                     }
                 }
 
-                // Keep the loading message until all emails are processed
                 sendResultArea.innerHTML = `<div class="result-container">${emailResults.innerHTML}</div>`;
             } catch (error) {
                 console.error('Send emails error:', error);
@@ -709,7 +842,6 @@
                 }
             }
 
-            // Wait for uploaded files to be read before checking spam score
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
             }
@@ -757,7 +889,7 @@
                             <pre>${data.report}</pre>
                         </div>
                     `;
-                    document.getElementById('sendResultArea').innerHTML = ''; // Clear form area on success
+                    document.getElementById('sendResultArea').innerHTML = '';
                 } else {
                     document.getElementById('sendResultArea').innerHTML = `<div class="result-container"><span class="text-danger">Error checking spam score: ${data.error || 'Unknown error'}</span></div>`;
                 }
